@@ -192,8 +192,7 @@ class DefaultAnchorGenerator(nn.Module):
             boxes = Boxes(anchors_per_feature_map)
             anchors_in_image.append(boxes)
 
-        anchors = [copy.deepcopy(anchors_in_image) for _ in range(num_images)]
-        return anchors
+        return [copy.deepcopy(anchors_in_image) for _ in range(num_images)]
 
 
 @ANCHOR_GENERATOR_REGISTRY.register()
@@ -351,8 +350,7 @@ class RotatedAnchorGenerator(nn.Module):
             boxes = RotatedBoxes(anchors_per_feature_map)
             anchors_in_image.append(boxes)
 
-        anchors = [copy.deepcopy(anchors_in_image) for _ in range(num_images)]
-        return anchors
+        return [copy.deepcopy(anchors_in_image) for _ in range(num_images)]
 
 
 def build_anchor_generator(cfg, input_shape):

@@ -68,12 +68,11 @@ class TridentRes5ROIHeads(Res5ROIHeads):
 
         if self.training:
             return pred_instances, losses
-        else:
-            pred_instances = merge_branch_instances(
-                pred_instances, num_branch, self.test_nms_thresh, self.test_detections_per_img
-            )
+        pred_instances = merge_branch_instances(
+            pred_instances, num_branch, self.test_nms_thresh, self.test_detections_per_img
+        )
 
-            return pred_instances, {}
+        return pred_instances, {}
 
 
 @ROI_HEADS_REGISTRY.register()
@@ -102,9 +101,8 @@ class TridentStandardROIHeads(StandardROIHeads):
 
         if self.training:
             return pred_instances, losses
-        else:
-            pred_instances = merge_branch_instances(
-                pred_instances, num_branch, self.test_nms_thresh, self.test_detections_per_img
-            )
+        pred_instances = merge_branch_instances(
+            pred_instances, num_branch, self.test_nms_thresh, self.test_detections_per_img
+        )
 
-            return pred_instances, {}
+        return pred_instances, {}

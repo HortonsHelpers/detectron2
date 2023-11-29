@@ -32,7 +32,7 @@ class TestTransforms(unittest.TestCase):
         transformed_bbox = transforms.apply_rotated_box(boxes)[0]
 
         expected_bbox = np.array([484, 388, 248, 160, 56], dtype=np.float64)
-        err_msg = "transformed_bbox = {}, expected {}".format(transformed_bbox, expected_bbox)
+        err_msg = f"transformed_bbox = {transformed_bbox}, expected {expected_bbox}"
         assert np.allclose(transformed_bbox, expected_bbox), err_msg
 
     def test_apply_rotated_boxes_unequal_scaling_factor(self):
@@ -40,8 +40,7 @@ class TestTransforms(unittest.TestCase):
         h, w = 400, 200
         newh, neww = 800, 800
         image = np.random.rand(h, w)
-        transform_gen = []
-        transform_gen.append(T.Resize(shape=(newh, neww)))
+        transform_gen = [T.Resize(shape=(newh, neww))]
         image, transforms = T.apply_transform_gens(transform_gen, image)
         image_shape = image.shape[:2]  # h, w
         assert image_shape == (newh, neww)
@@ -66,7 +65,9 @@ class TestTransforms(unittest.TestCase):
             ],
             dtype=np.float64,
         )
-        err_msg = "transformed_boxes = {}, expected {}".format(transformed_boxes, expected_bboxes)
+        err_msg = (
+            f"transformed_boxes = {transformed_boxes}, expected {expected_bboxes}"
+        )
         assert np.allclose(transformed_boxes, expected_bboxes), err_msg
 
     def test_print_transform_gen(self):

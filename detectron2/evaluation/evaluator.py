@@ -76,7 +76,7 @@ class DatasetEvaluators(DatasetEvaluator):
                 for k, v in result.items():
                     assert (
                         k not in results
-                    ), "Different evaluators produce results with the same key {}".format(k)
+                    ), f"Different evaluators produce results with the same key {k}"
                     results[k] = v
         return results
 
@@ -103,7 +103,7 @@ def inference_on_dataset(model, data_loader, evaluator):
     """
     num_devices = torch.distributed.get_world_size() if torch.distributed.is_initialized() else 1
     logger = logging.getLogger(__name__)
-    logger.info("Start inference on {} images".format(len(data_loader)))
+    logger.info(f"Start inference on {len(data_loader)} images")
 
     total = len(data_loader)  # inference data loader must have a fixed length
     evaluator.reset()

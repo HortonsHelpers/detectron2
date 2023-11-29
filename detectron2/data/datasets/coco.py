@@ -77,7 +77,7 @@ def load_coco_json(json_file, image_root, dataset_name=None, extra_annotation_ke
         # It works by looking at the "categories" field in the json, therefore
         # if users' own json also have incontiguous ids, we'll
         # apply this mapping as well but print a warning.
-        if not (min(cat_ids) == 1 and max(cat_ids) == len(cat_ids)):
+        if min(cat_ids) != 1 or max(cat_ids) != len(cat_ids):
             if "coco" not in dataset_name:
                 logger.warning(
                     """
@@ -120,13 +120,13 @@ Category ids in annotations are not in [1, #categories]! We'll apply a mapping f
         # However the ratio of buggy annotations there is tiny and does not affect accuracy.
         # Therefore we explicitly white-list them.
         ann_ids = [ann["id"] for anns_per_image in anns for ann in anns_per_image]
-        assert len(set(ann_ids)) == len(ann_ids), "Annotation ids in '{}' are not unique!".format(
-            json_file
-        )
+        assert len(set(ann_ids)) == len(
+            ann_ids
+        ), f"Annotation ids in '{json_file}' are not unique!"
 
     imgs_anns = list(zip(imgs, anns))
 
-    logger.info("Loaded {} images in COCO format from {}".format(len(imgs_anns), json_file))
+    logger.info(f"Loaded {len(imgs_anns)} images in COCO format from {json_file}")
 
     dataset_dicts = []
 
@@ -135,8 +135,7 @@ Category ids in annotations are not in [1, #categories]! We'll apply a mapping f
     num_instances_without_valid_segmentation = 0
 
     for (img_dict, anno_dict_list) in imgs_anns:
-        record = {}
-        record["file_name"] = os.path.join(image_root, img_dict["file_name"])
+        record = {"file_name": os.path.join(image_root, img_dict["file_name"])}
         record["height"] = img_dict["height"]
         record["width"] = img_dict["width"]
         image_id = record["image_id"] = img_dict["id"]
@@ -156,18 +155,16 @@ Category ids in annotations are not in [1, #categories]! We'll apply a mapping f
 
             obj = {key: anno[key] for key in ann_keys if key in anno}
 
-            segm = anno.get("segmentation", None)
-            if segm:  # either list[list[float]] or dict(RLE)
+            if segm := anno.get("segmentation", None):
                 if not isinstance(segm, dict):
                     # filter out invalid polygons (< 3 points)
                     segm = [poly for poly in segm if len(poly) % 2 == 0 and len(poly) >= 6]
-                    if len(segm) == 0:
+                    if not segm:
                         num_instances_without_valid_segmentation += 1
                         continue  # ignore this instance
                 obj["segmentation"] = segm
 
-            keypts = anno.get("keypoints", None)
-            if keypts:  # list[int]
+            if keypts := anno.get("keypoints", None):
                 for idx, v in enumerate(keypts):
                     if idx % 3 != 2:
                         # COCO's segmentation coordinates are floating points in [0, H or W],
@@ -186,10 +183,7 @@ Category ids in annotations are not in [1, #categories]! We'll apply a mapping f
 
     if num_instances_without_valid_segmentation > 0:
         logger.warn(
-            "Filtered out {} instances without valid segmentation. "
-            "There might be issues in your dataset generation process.".format(
-                num_instances_without_valid_segmentation
-            )
+            f"Filtered out {num_instances_without_valid_segmentation} instances without valid segmentation. There might be issues in your dataset generation process."
         )
     return dataset_dicts
 
@@ -309,9 +303,6 @@ def convert_to_coco_dict(dataset_name):
 
         anns_per_image = image_dict["annotations"]
         for annotation in anns_per_image:
-            # create a new dict with only COCO fields
-            coco_annotation = {}
-
             # COCO requirement: XYWH box format
             bbox = annotation["bbox"]
             bbox_mode = annotation["bbox_mode"]
@@ -343,16 +334,14 @@ def convert_to_coco_dict(dataset_name):
                 else:
                     num_keypoints = sum(kp > 0 for kp in keypoints[2::3])
 
-            # COCO requirement:
-            #   linking annotations to images
-            #   "id" field must start with 1
-            coco_annotation["id"] = len(coco_annotations) + 1
-            coco_annotation["image_id"] = coco_image["id"]
-            coco_annotation["bbox"] = [round(float(x), 3) for x in bbox]
-            coco_annotation["area"] = area
-            coco_annotation["category_id"] = annotation["category_id"]
-            coco_annotation["iscrowd"] = annotation.get("iscrowd", 0)
-
+            coco_annotation = {
+                "id": len(coco_annotations) + 1,
+                "image_id": coco_image["id"],
+                "bbox": [round(float(x), 3) for x in bbox],
+                "area": area,
+                "category_id": annotation["category_id"],
+                "iscrowd": annotation.get("iscrowd", 0),
+            }
             # Add optional fields
             if "keypoints" in annotation:
                 coco_annotation["keypoints"] = keypoints
@@ -372,14 +361,13 @@ def convert_to_coco_dict(dataset_name):
         "date_created": str(datetime.datetime.now()),
         "description": "Automatically generated COCO json file for Detectron2.",
     }
-    coco_dict = {
+    return {
         "info": info,
         "images": coco_images,
         "annotations": coco_annotations,
         "categories": categories,
         "licenses": None,
     }
-    return coco_dict
 
 
 def convert_to_coco_json(dataset_name, output_file, allow_cached=True):
@@ -432,7 +420,7 @@ if __name__ == "__main__":
     meta = MetadataCatalog.get(sys.argv[3])
 
     dicts = load_coco_json(sys.argv[1], sys.argv[2], sys.argv[3])
-    logger.info("Done loading {} samples.".format(len(dicts)))
+    logger.info(f"Done loading {len(dicts)} samples.")
 
     dirname = "coco-data-vis"
     os.makedirs(dirname, exist_ok=True)

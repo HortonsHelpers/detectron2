@@ -96,25 +96,26 @@ def load_lvis_json(json_file, image_root, dataset_name=None):
 
     # Sanity check that each annotation has a unique id
     ann_ids = [ann["id"] for anns_per_image in anns for ann in anns_per_image]
-    assert len(set(ann_ids)) == len(ann_ids), "Annotation ids in '{}' are not unique".format(
-        json_file
-    )
+    assert len(set(ann_ids)) == len(
+        ann_ids
+    ), f"Annotation ids in '{json_file}' are not unique"
 
     imgs_anns = list(zip(imgs, anns))
 
-    logger.info("Loaded {} images in the LVIS format from {}".format(len(imgs_anns), json_file))
+    logger.info(
+        f"Loaded {len(imgs_anns)} images in the LVIS format from {json_file}"
+    )
 
     dataset_dicts = []
 
     for (img_dict, anno_dict_list) in imgs_anns:
-        record = {}
         file_name = img_dict["file_name"]
-        if img_dict["file_name"].startswith("COCO"):
+        if file_name.startswith("COCO"):
             # Convert form the COCO 2014 file naming convention of
             # COCO_[train/val/test]2014_000000000000.jpg to the 2017 naming convention of
             # 000000000000.jpg (LVIS v1 will fix this naming issue)
             file_name = file_name[-16:]
-        record["file_name"] = os.path.join(image_root, file_name)
+        record = {"file_name": os.path.join(image_root, file_name)}
         record["height"] = img_dict["height"]
         record["width"] = img_dict["width"]
         record["not_exhaustive_category_ids"] = img_dict.get("not_exhaustive_category_ids", [])
@@ -127,8 +128,6 @@ def load_lvis_json(json_file, image_root, dataset_name=None):
             # the image_id we're looking at.
             # This fails only when the data parsing logic or the annotation file is buggy.
             assert anno["image_id"] == image_id
-            obj = {"bbox": anno["bbox"], "bbox_mode": BoxMode.XYWH_ABS}
-            obj["category_id"] = anno["category_id"] - 1  # Convert 1-indexed to 0-indexed
             segm = anno["segmentation"]  # list[list[float]]
             # filter out invalid polygons (< 3 points)
             valid_segm = [poly for poly in segm if len(poly) % 2 == 0 and len(poly) >= 6]
@@ -136,7 +135,12 @@ def load_lvis_json(json_file, image_root, dataset_name=None):
                 valid_segm
             ), "Annotation contains an invalid polygon with < 3 points"
             assert len(segm) > 0
-            obj["segmentation"] = segm
+            obj = {
+                "bbox": anno["bbox"],
+                "bbox_mode": BoxMode.XYWH_ABS,
+                "category_id": anno["category_id"] - 1,
+                "segmentation": segm,
+            }
             objs.append(obj)
         record["annotations"] = objs
         dataset_dicts.append(record)
@@ -159,7 +163,7 @@ def get_lvis_instances_meta(dataset_name):
     # There will be a v1 in the future
     # elif dataset_name == "lvis_v1":
     #   return get_lvis_instances_meta_v1()
-    raise ValueError("No built-in metadata for dataset {}".format(dataset_name))
+    raise ValueError(f"No built-in metadata for dataset {dataset_name}")
 
 
 def _get_lvis_instances_meta_v0_5():
@@ -169,10 +173,9 @@ def _get_lvis_instances_meta_v0_5():
         cat_ids
     ), "Category ids are not in [1, #categories], as expected"
     # Ensure that the category list is sorted by id
-    lvis_categories = [k for k in sorted(LVIS_CATEGORIES, key=lambda x: x["id"])]
+    lvis_categories = list(sorted(LVIS_CATEGORIES, key=lambda x: x["id"]))
     thing_classes = [k["synonyms"][0] for k in lvis_categories]
-    meta = {"thing_classes": thing_classes}
-    return meta
+    return {"thing_classes": thing_classes}
 
 
 if __name__ == "__main__":
@@ -194,7 +197,7 @@ if __name__ == "__main__":
     meta = MetadataCatalog.get(sys.argv[3])
 
     dicts = load_lvis_json(sys.argv[1], sys.argv[2], sys.argv[3])
-    logger.info("Done loading {} samples.".format(len(dicts)))
+    logger.info(f"Done loading {len(dicts)} samples.")
 
     dirname = "lvis-data-vis"
     os.makedirs(dirname, exist_ok=True)

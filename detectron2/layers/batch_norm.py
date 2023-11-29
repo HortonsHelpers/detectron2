@@ -43,15 +43,7 @@ class FrozenBatchNorm2d(nn.Module):
         self.register_buffer("running_var", torch.ones(num_features) - eps)
 
     def forward(self, x):
-        if x.requires_grad:
-            # When gradients are needed, F.batch_norm will use extra memory
-            # because its backward op computes gradients for weight/bias as well.
-            scale = self.weight * (self.running_var + self.eps).rsqrt()
-            bias = self.bias - self.running_mean * scale
-            scale = scale.reshape(1, -1, 1, 1)
-            bias = bias.reshape(1, -1, 1, 1)
-            return x * scale + bias
-        else:
+        if not x.requires_grad:
             # When gradients are not needed, F.batch_norm is a single fused op
             # and provide more optimization opportunities.
             return F.batch_norm(
@@ -63,6 +55,13 @@ class FrozenBatchNorm2d(nn.Module):
                 training=False,
                 eps=self.eps,
             )
+        # When gradients are needed, F.batch_norm will use extra memory
+        # because its backward op computes gradients for weight/bias as well.
+        scale = self.weight * (self.running_var + self.eps).rsqrt()
+        bias = self.bias - self.running_mean * scale
+        scale = scale.reshape(1, -1, 1, 1)
+        bias = bias.reshape(1, -1, 1, 1)
+        return x * scale + bias
 
     def _load_from_state_dict(
         self, state_dict, prefix, local_metadata, strict, missing_keys, unexpected_keys, error_msgs
@@ -72,23 +71,23 @@ class FrozenBatchNorm2d(nn.Module):
         if version is None or version < 2:
             # No running_mean/var in early versions
             # This will silent the warnings
-            if prefix + "running_mean" not in state_dict:
-                state_dict[prefix + "running_mean"] = torch.zeros_like(self.running_mean)
-            if prefix + "running_var" not in state_dict:
-                state_dict[prefix + "running_var"] = torch.ones_like(self.running_var)
+            if f"{prefix}running_mean" not in state_dict:
+                state_dict[f"{prefix}running_mean"] = torch.zeros_like(self.running_mean)
+            if f"{prefix}running_var" not in state_dict:
+                state_dict[f"{prefix}running_var"] = torch.ones_like(self.running_var)
 
         if version is not None and version < 3:
             logger = logging.getLogger(__name__)
-            logger.info("FrozenBatchNorm {} is upgraded to version 3.".format(prefix.rstrip(".")))
+            logger.info(f'FrozenBatchNorm {prefix.rstrip(".")} is upgraded to version 3.')
             # In version < 3, running_var are used without +eps.
-            state_dict[prefix + "running_var"] -= self.eps
+            state_dict[f"{prefix}running_var"] -= self.eps
 
         super()._load_from_state_dict(
             state_dict, prefix, local_metadata, strict, missing_keys, unexpected_keys, error_msgs
         )
 
     def __repr__(self):
-        return "FrozenBatchNorm2d(num_features={}, eps={})".format(self.num_features, self.eps)
+        return f"FrozenBatchNorm2d(num_features={self.num_features}, eps={self.eps})"
 
     @classmethod
     def convert_frozen_batchnorm(cls, module):
@@ -148,7 +147,7 @@ def get_norm(norm, out_channels):
 class AllReduce(Function):
     @staticmethod
     def forward(ctx, input):
-        input_list = [torch.zeros_like(input) for k in range(dist.get_world_size())]
+        input_list = [torch.zeros_like(input) for _ in range(dist.get_world_size())]
         # Use allgather instead of allreduce since I don't trust in-place operations ..
         dist.all_gather(input_list, input, async_op=False)
         inputs = torch.stack(input_list, dim=0)

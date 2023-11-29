@@ -16,10 +16,15 @@ class _ROIAlign(Function):
         ctx.sampling_ratio = sampling_ratio
         ctx.input_shape = input.size()
         ctx.aligned = aligned
-        output = _C.roi_align_forward(
-            input, roi, spatial_scale, output_size[0], output_size[1], sampling_ratio, aligned
+        return _C.roi_align_forward(
+            input,
+            roi,
+            spatial_scale,
+            output_size[0],
+            output_size[1],
+            sampling_ratio,
+            aligned,
         )
-        return output
 
     @staticmethod
     @once_differentiable
@@ -96,10 +101,10 @@ class ROIAlign(nn.Module):
         )
 
     def __repr__(self):
-        tmpstr = self.__class__.__name__ + "("
-        tmpstr += "output_size=" + str(self.output_size)
-        tmpstr += ", spatial_scale=" + str(self.spatial_scale)
-        tmpstr += ", sampling_ratio=" + str(self.sampling_ratio)
-        tmpstr += ", aligned=" + str(self.aligned)
+        tmpstr = f"{self.__class__.__name__}("
+        tmpstr += f"output_size={str(self.output_size)}"
+        tmpstr += f", spatial_scale={str(self.spatial_scale)}"
+        tmpstr += f", sampling_ratio={str(self.sampling_ratio)}"
+        tmpstr += f", aligned={str(self.aligned)}"
         tmpstr += ")"
         return tmpstr

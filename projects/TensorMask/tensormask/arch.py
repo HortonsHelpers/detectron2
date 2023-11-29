@@ -110,11 +110,7 @@ def _assignment_rule(
 
     # find all the elements that match to ground truths multiple times
     not_unique_idxs = assign_matrix.sum(dim=0) > 1
-    if uniqueness_on:
-        match_labels[not_unique_idxs] = 0
-    else:
-        match_labels[not_unique_idxs] = -1
-
+    match_labels[not_unique_idxs] = 0 if uniqueness_on else -1
     return matches, match_labels
 
 

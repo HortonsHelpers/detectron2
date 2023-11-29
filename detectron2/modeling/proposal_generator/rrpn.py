@@ -62,11 +62,7 @@ class RRPN(RPN):
             self.smooth_l1_beta,
         )
 
-        if self.training:
-            losses = outputs.losses()
-        else:
-            losses = {}
-
+        losses = outputs.losses() if self.training else {}
         with torch.no_grad():
             # Find the top proposals by applying NMS and removing boxes that
             # are too small. The proposals are treated as fixed for approximate

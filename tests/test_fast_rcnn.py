@@ -36,8 +36,7 @@ class FastRCNNTest(unittest.TestCase):
         result.proposal_boxes = Boxes(proposal_boxes)
         result.gt_boxes = Boxes(gt_boxes)
         result.gt_classes = torch.tensor([1, 2])
-        proposals = []
-        proposals.append(result)
+        proposals = [result]
         smooth_l1_beta = cfg.MODEL.ROI_BOX_HEAD.SMOOTH_L1_BETA
 
         outputs = FastRCNNOutputs(
@@ -50,7 +49,7 @@ class FastRCNNTest(unittest.TestCase):
             "loss_cls": torch.tensor(1.7951188087),
             "loss_box_reg": torch.tensor(4.0357131958),
         }
-        for name in expected_losses.keys():
+        for name in expected_losses:
             assert torch.allclose(losses[name], expected_losses[name])
 
     def test_fast_rcnn_rotated(self):
@@ -77,8 +76,7 @@ class FastRCNNTest(unittest.TestCase):
         result.proposal_boxes = RotatedBoxes(proposal_boxes)
         result.gt_boxes = RotatedBoxes(gt_boxes)
         result.gt_classes = torch.tensor([1, 2])
-        proposals = []
-        proposals.append(result)
+        proposals = [result]
         smooth_l1_beta = cfg.MODEL.ROI_BOX_HEAD.SMOOTH_L1_BETA
 
         outputs = RotatedFastRCNNOutputs(
@@ -95,7 +93,7 @@ class FastRCNNTest(unittest.TestCase):
             "loss_cls": torch.tensor(1.7920907736),
             "loss_box_reg": torch.tensor(4.0410838127),
         }
-        for name in expected_losses.keys():
+        for name in expected_losses:
             assert torch.allclose(losses[name], expected_losses[name])
 
 

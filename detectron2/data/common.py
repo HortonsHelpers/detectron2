@@ -49,9 +49,7 @@ class MapDataset(data.Dataset):
             if retry_count >= 3:
                 logger = logging.getLogger(__name__)
                 logger.warning(
-                    "Failed to apply `_map_func` for idx: {}, retry count: {}".format(
-                        idx, retry_count
-                    )
+                    f"Failed to apply `_map_func` for idx: {idx}, retry count: {retry_count}"
                 )
 
 
@@ -75,10 +73,7 @@ class DatasetFromList(data.Dataset):
         return len(self._lst)
 
     def __getitem__(self, idx):
-        if self._copy:
-            return copy.deepcopy(self._lst[idx])
-        else:
-            return self._lst[idx]
+        return copy.deepcopy(self._lst[idx]) if self._copy else self._lst[idx]
 
 
 class AspectRatioGroupedDataset(data.IterableDataset):

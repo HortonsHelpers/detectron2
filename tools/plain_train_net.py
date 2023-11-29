@@ -90,9 +90,9 @@ def get_evaluator(cfg, dataset_name, output_folder=None):
         return PascalVOCDetectionEvaluator(dataset_name)
     if evaluator_type == "lvis":
         return LVISEvaluator(dataset_name, cfg, True, output_folder)
-    if len(evaluator_list) == 0:
+    if not evaluator_list:
         raise NotImplementedError(
-            "no Evaluator for the dataset {} with the type {}".format(dataset_name, evaluator_type)
+            f"no Evaluator for the dataset {dataset_name} with the type {evaluator_type}"
         )
     if len(evaluator_list) == 1:
         return evaluator_list[0]
@@ -109,7 +109,7 @@ def do_test(cfg, model):
         results_i = inference_on_dataset(model, data_loader, evaluator)
         results[dataset_name] = results_i
         if comm.is_main_process():
-            logger.info("Evaluation results for {} in csv format:".format(dataset_name))
+            logger.info(f"Evaluation results for {dataset_name} in csv format:")
             print_csv_format(results_i)
     if len(results) == 1:
         results = list(results.values())[0]
@@ -146,18 +146,18 @@ def do_train(cfg, model, resume=False):
     # compared to "train_net.py", we do not support accurate timing and
     # precise BN here, because they are not trivial to implement
     data_loader = build_detection_train_loader(cfg)
-    logger.info("Starting training from iteration {}".format(start_iter))
+    logger.info(f"Starting training from iteration {start_iter}")
     with EventStorage(start_iter) as storage:
         for data, iteration in zip(data_loader, range(start_iter, max_iter)):
             iteration = iteration + 1
             storage.step()
 
             loss_dict = model(data)
-            losses = sum(loss for loss in loss_dict.values())
+            losses = sum(loss_dict.values())
             assert torch.isfinite(losses).all(), loss_dict
 
             loss_dict_reduced = {k: v.item() for k, v in comm.reduce_dict(loss_dict).items()}
-            losses_reduced = sum(loss for loss in loss_dict_reduced.values())
+            losses_reduced = sum(loss_dict_reduced.values())
             if comm.is_main_process():
                 storage.put_scalars(total_loss=losses_reduced, **loss_dict_reduced)
 
@@ -200,7 +200,7 @@ def main(args):
     cfg = setup(args)
 
     model = build_model(cfg)
-    logger.info("Model:\n{}".format(model))
+    logger.info(f"Model:\n{model}")
     if args.eval_only:
         DetectionCheckpointer(model, save_dir=cfg.OUTPUT_DIR).resume_or_load(
             cfg.MODEL.WEIGHTS, resume=args.resume

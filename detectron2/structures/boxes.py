@@ -158,8 +158,7 @@ class Boxes:
             torch.Tensor: a vector with areas of each box.
         """
         box = self.tensor
-        area = (box[:, 2] - box[:, 0]) * (box[:, 3] - box[:, 1])
-        return area
+        return (box[:, 2] - box[:, 0]) * (box[:, 3] - box[:, 1])
 
     def clip(self, box_size: BoxSizeType) -> None:
         """
@@ -189,8 +188,7 @@ class Boxes:
         box = self.tensor
         widths = box[:, 2] - box[:, 0]
         heights = box[:, 3] - box[:, 1]
-        keep = (widths > threshold) & (heights > threshold)
-        return keep
+        return (widths > threshold) & (heights > threshold)
 
     def __getitem__(self, item: Union[int, slice, torch.BoolTensor]) -> "Boxes":
         """
@@ -209,14 +207,16 @@ class Boxes:
         if isinstance(item, int):
             return Boxes(self.tensor[item].view(1, -1))
         b = self.tensor[item]
-        assert b.dim() == 2, "Indexing on Boxes with {} failed to return a matrix!".format(item)
+        assert (
+            b.dim() == 2
+        ), f"Indexing on Boxes with {item} failed to return a matrix!"
         return Boxes(b)
 
     def __len__(self) -> int:
         return self.tensor.shape[0]
 
     def __repr__(self) -> str:
-        return "Boxes(" + str(self.tensor) + ")"
+        return f"Boxes({str(self.tensor)})"
 
     def inside_box(self, box_size: BoxSizeType, boundary_threshold: int = 0) -> torch.Tensor:
         """
@@ -229,13 +229,12 @@ class Boxes:
             a binary vector, indicating whether each box is inside the reference box.
         """
         height, width = box_size
-        inds_inside = (
+        return (
             (self.tensor[..., 0] >= -boundary_threshold)
             & (self.tensor[..., 1] >= -boundary_threshold)
             & (self.tensor[..., 2] < width + boundary_threshold)
             & (self.tensor[..., 3] < height + boundary_threshold)
         )
-        return inds_inside
 
     def get_centers(self) -> torch.Tensor:
         """
@@ -263,11 +262,10 @@ class Boxes:
             Boxes: the concatenated Boxes
         """
         assert isinstance(boxes_list, (list, tuple))
-        assert len(boxes_list) > 0
+        assert boxes_list
         assert all(isinstance(box, Boxes) for box in boxes_list)
 
-        cat_boxes = type(boxes_list[0])(cat([b.tensor for b in boxes_list], dim=0))
-        return cat_boxes
+        return type(boxes_list[0])(cat([b.tensor for b in boxes_list], dim=0))
 
     @property
     def device(self) -> torch.device:
@@ -308,13 +306,11 @@ def pairwise_iou(boxes1: Boxes, boxes2: Boxes) -> torch.Tensor:
     inter = width_height.prod(dim=2)  # [N,M]
     del width_height
 
-    # handle empty boxes
-    iou = torch.where(
+    return torch.where(
         inter > 0,
         inter / (area1[:, None] + area2 - inter),
         torch.zeros(1, dtype=inter.dtype, device=inter.device),
     )
-    return iou
 
 
 def matched_boxlist_iou(boxes1: Boxes, boxes2: Boxes) -> torch.Tensor:
@@ -328,10 +324,9 @@ def matched_boxlist_iou(boxes1: Boxes, boxes2: Boxes) -> torch.Tensor:
     Returns:
         (tensor) iou, sized [N].
     """
-    assert len(boxes1) == len(boxes2), (
-        "boxlists should have the same"
-        "number of entries, got {}, {}".format(len(boxes1), len(boxes2))
-    )
+    assert len(boxes1) == len(
+        boxes2
+    ), f"boxlists should have the samenumber of entries, got {len(boxes1)}, {len(boxes2)}"
     area1 = boxes1.area()  # [N]
     area2 = boxes2.area()  # [N]
     box1, box2 = boxes1.tensor, boxes2.tensor
@@ -339,5 +334,4 @@ def matched_boxlist_iou(boxes1: Boxes, boxes2: Boxes) -> torch.Tensor:
     rb = torch.min(box1[:, 2:], box2[:, 2:])  # [N,2]
     wh = (rb - lt).clamp(min=0)  # [N,2]
     inter = wh[:, 0] * wh[:, 1]  # [N]
-    iou = inter / (area1 + area2 - inter)  # [N]
-    return iou
+    return inter / (area1 + area2 - inter)

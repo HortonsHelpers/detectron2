@@ -88,7 +88,7 @@ class GeneralizedRCNNWithTTA(nn.Module):
             model = model.module
         assert isinstance(
             model, GeneralizedRCNN
-        ), "TTA is only supported on GeneralizedRCNN. Got a model of type {}".format(type(model))
+        ), f"TTA is only supported on GeneralizedRCNN. Got a model of type {type(model)}"
         self.cfg = cfg.clone()
         assert not self.cfg.MODEL.KEYPOINT_ON, "TTA for keypoint is not supported yet"
         assert (

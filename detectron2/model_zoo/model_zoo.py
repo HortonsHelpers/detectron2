@@ -89,7 +89,7 @@ def get_checkpoint_url(config_path):
         suffix = _ModelZooUrls.CONFIG_PATH_TO_URL_SUFFIX[config_path]
         name = config_path.replace(".yaml", "")
         return _ModelZooUrls.S3_PREFIX + name + "/" + suffix
-    raise RuntimeError("{} not available in Model Zoo!".format(name))
+    raise RuntimeError(f"{name} not available in Model Zoo!")
 
 
 def get_config_file(config_path):
@@ -107,7 +107,7 @@ def get_config_file(config_path):
         "detectron2.model_zoo", os.path.join("configs", config_path)
     )
     if not os.path.exists(cfg_file):
-        raise RuntimeError("{} not available in Model Zoo!".format(config_path))
+        raise RuntimeError(f"{config_path} not available in Model Zoo!")
     return cfg_file
 
 

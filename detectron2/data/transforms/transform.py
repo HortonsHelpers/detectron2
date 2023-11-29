@@ -81,8 +81,7 @@ class ResizeTransform(Transform):
         pil_image = Image.fromarray(img)
         interp_method = interp if interp is not None else self.interp
         pil_image = pil_image.resize((self.new_w, self.new_h), interp_method)
-        ret = np.asarray(pil_image)
-        return ret
+        return np.asarray(pil_image)
 
     def apply_coords(self, coords):
         coords[:, 0] = coords[:, 0] * (self.new_w * 1.0 / self.w)

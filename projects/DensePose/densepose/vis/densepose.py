@@ -77,8 +77,7 @@ class DensePoseResultsMplContourVisualizer(DensePoseResultsVisualizer):
         import matplotlib.pyplot as plt
         from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
 
-        context = {}
-        context["image_bgr"] = image_bgr
+        context = {"image_bgr": image_bgr}
         dpi = 100
         height_inches = float(image_bgr.shape[0]) / dpi
         width_inches = float(image_bgr.shape[1]) / dpi
@@ -99,8 +98,7 @@ class DensePoseResultsMplContourVisualizer(DensePoseResultsVisualizer):
         canvas.draw()
         image_1d = np.fromstring(canvas.tostring_rgb(), dtype="uint8")
         image_rgb = image_1d.reshape(h, w, 3)
-        image_bgr = image_rgb[:, :, ::-1].copy()
-        return image_bgr
+        return image_rgb[:, :, ::-1].copy()
 
     def visualize_iuv_arr(self, context, iuv_arr: np.ndarray, bbox_xywh: Boxes) -> Image:
         import matplotlib.pyplot as plt
@@ -125,14 +123,8 @@ class DensePoseResultsCustomContourVisualizer(DensePoseResultsVisualizer):
     def __init__(self, levels=10, **kwargs):
         # TODO: colormap is hardcoded
         cmap = cv2.COLORMAP_PARULA
-        if isinstance(levels, int):
-            self.levels = np.linspace(0, 1, levels)
-        else:
-            self.levels = levels
-        if "linewidths" in kwargs:
-            self.linewidths = kwargs["linewidths"]
-        else:
-            self.linewidths = [1] * len(self.levels)
+        self.levels = np.linspace(0, 1, levels) if isinstance(levels, int) else levels
+        self.linewidths = kwargs.get("linewidths", [1] * len(self.levels))
         self.plot_args = kwargs
         img_colors_bgr = cv2.applyColorMap((self.levels * 255).astype(np.uint8), cmap)
         self.level_colors_bgr = [
@@ -183,7 +175,7 @@ class DensePoseResultsCustomContourVisualizer(DensePoseResultsVisualizer):
                 color_bgr = self.level_colors_bgr[level_idx]
                 linewidth = self.linewidths[level_idx]
                 while not it.finished:
-                    if (it[0] != 0) and (it[0] != 15):
+                    if it[0] not in [0, 15]:
                         i, j = it.multi_index
                         if bin_mask_codes[i, j] != 0:
                             self._draw_line(
@@ -238,37 +230,37 @@ class DensePoseResultsCustomContourVisualizer(DensePoseResultsVisualizer):
         y0j = float(i) / Nh
         He = 1.0 / Nh
         We = 1.0 / Nw
-        if (bin_code == 1) or (bin_code == 14):
+        if bin_code in [1, 14]:
             a = (v - v0) / (v1 - v0)
             b = (v - v0) / (v3 - v0)
             pt1 = (x0i, y0j + a * He)
             pt2 = (x0i + b * We, y0j)
             return [(pt1, pt2)]
-        elif (bin_code == 2) or (bin_code == 13):
+        elif bin_code in [2, 13]:
             a = (v - v0) / (v1 - v0)
             b = (v - v1) / (v2 - v1)
             pt1 = (x0i, y0j + a * He)
             pt2 = (x0i + b * We, y0j + He)
             return [(pt1, pt2)]
-        elif (bin_code == 3) or (bin_code == 12):
+        elif bin_code in [3, 12]:
             a = (v - v0) / (v3 - v0)
             b = (v - v1) / (v2 - v1)
             pt1 = (x0i + a * We, y0j)
             pt2 = (x0i + b * We, y0j + He)
             return [(pt1, pt2)]
-        elif (bin_code == 4) or (bin_code == 11):
+        elif bin_code in [4, 11]:
             a = (v - v1) / (v2 - v1)
             b = (v - v3) / (v2 - v3)
             pt1 = (x0i + a * We, y0j + He)
             pt2 = (x0i + We, y0j + b * He)
             return [(pt1, pt2)]
-        elif (bin_code == 6) or (bin_code == 9):
+        elif bin_code in [6, 9]:
             a = (v - v0) / (v1 - v0)
             b = (v - v3) / (v2 - v3)
             pt1 = (x0i, y0j + a * He)
             pt2 = (x0i + We, y0j + b * He)
             return [(pt1, pt2)]
-        elif (bin_code == 7) or (bin_code == 8):
+        elif bin_code in [7, 8]:
             a = (v - v0) / (v3 - v0)
             b = (v - v3) / (v2 - v3)
             pt1 = (x0i + a * We, y0j)
@@ -354,22 +346,18 @@ class DensePoseOutputsFineSegmentationVisualizer(object):
         U = densepose_output.U
         V = densepose_output.V
         N = S.size(0)
-        assert N == I.size(0), (
-            "densepose outputs S {} and I {}"
-            " should have equal first dim size".format(S.size(), I.size())
-        )
-        assert N == U.size(0), (
-            "densepose outputs S {} and U {}"
-            " should have equal first dim size".format(S.size(), U.size())
-        )
-        assert N == V.size(0), (
-            "densepose outputs S {} and V {}"
-            " should have equal first dim size".format(S.size(), V.size())
-        )
-        assert N == len(bboxes_xywh), (
-            "number of bounding boxes {}"
-            " should be equal to first dim size of outputs {}".format(len(bboxes_xywh), N)
-        )
+        assert N == I.size(
+            0
+        ), f"densepose outputs S {S.size()} and I {I.size()} should have equal first dim size"
+        assert N == U.size(
+            0
+        ), f"densepose outputs S {S.size()} and U {U.size()} should have equal first dim size"
+        assert N == V.size(
+            0
+        ), f"densepose outputs S {S.size()} and V {V.size()} should have equal first dim size"
+        assert N == len(
+            bboxes_xywh
+        ), f"number of bounding boxes {len(bboxes_xywh)} should be equal to first dim size of outputs {N}"
         for n in range(N):
             Sn = S[n].argmax(dim=0)
             In = I[n].argmax(dim=0) * (Sn > 0).long()
@@ -395,28 +383,24 @@ class DensePoseOutputsUVisualizer(object):
         densepose_output, bboxes_xywh = dp_output_with_bboxes
         assert isinstance(
             densepose_output, DensePoseOutput
-        ), "DensePoseOutput expected, {} encountered".format(type(densepose_output))
+        ), f"DensePoseOutput expected, {type(densepose_output)} encountered"
         S = densepose_output.S
         I = densepose_output.I  # noqa
         U = densepose_output.U
         V = densepose_output.V
         N = S.size(0)
-        assert N == I.size(0), (
-            "densepose outputs S {} and I {}"
-            " should have equal first dim size".format(S.size(), I.size())
-        )
-        assert N == U.size(0), (
-            "densepose outputs S {} and U {}"
-            " should have equal first dim size".format(S.size(), U.size())
-        )
-        assert N == V.size(0), (
-            "densepose outputs S {} and V {}"
-            " should have equal first dim size".format(S.size(), V.size())
-        )
-        assert N == len(bboxes_xywh), (
-            "number of bounding boxes {}"
-            " should be equal to first dim size of outputs {}".format(len(bboxes_xywh), N)
-        )
+        assert N == I.size(
+            0
+        ), f"densepose outputs S {S.size()} and I {I.size()} should have equal first dim size"
+        assert N == U.size(
+            0
+        ), f"densepose outputs S {S.size()} and U {U.size()} should have equal first dim size"
+        assert N == V.size(
+            0
+        ), f"densepose outputs S {S.size()} and V {V.size()} should have equal first dim size"
+        assert N == len(
+            bboxes_xywh
+        ), f"number of bounding boxes {len(bboxes_xywh)} should be equal to first dim size of outputs {N}"
         for n in range(N):
             Sn = S[n].argmax(dim=0)
             In = I[n].argmax(dim=0) * (Sn > 0).long()
@@ -446,28 +430,24 @@ class DensePoseOutputsVVisualizer(object):
         densepose_output, bboxes_xywh = dp_output_with_bboxes
         assert isinstance(
             densepose_output, DensePoseOutput
-        ), "DensePoseOutput expected, {} encountered".format(type(densepose_output))
+        ), f"DensePoseOutput expected, {type(densepose_output)} encountered"
         S = densepose_output.S
         I = densepose_output.I  # noqa
         U = densepose_output.U
         V = densepose_output.V
         N = S.size(0)
-        assert N == I.size(0), (
-            "densepose outputs S {} and I {}"
-            " should have equal first dim size".format(S.size(), I.size())
-        )
-        assert N == U.size(0), (
-            "densepose outputs S {} and U {}"
-            " should have equal first dim size".format(S.size(), U.size())
-        )
-        assert N == V.size(0), (
-            "densepose outputs S {} and V {}"
-            " should have equal first dim size".format(S.size(), V.size())
-        )
-        assert N == len(bboxes_xywh), (
-            "number of bounding boxes {}"
-            " should be equal to first dim size of outputs {}".format(len(bboxes_xywh), N)
-        )
+        assert N == I.size(
+            0
+        ), f"densepose outputs S {S.size()} and I {I.size()} should have equal first dim size"
+        assert N == U.size(
+            0
+        ), f"densepose outputs S {S.size()} and U {U.size()} should have equal first dim size"
+        assert N == V.size(
+            0
+        ), f"densepose outputs S {S.size()} and V {V.size()} should have equal first dim size"
+        assert N == len(
+            bboxes_xywh
+        ), f"number of bounding boxes {len(bboxes_xywh)} should be equal to first dim size of outputs {N}"
         for n in range(N):
             Sn = S[n].argmax(dim=0)
             In = I[n].argmax(dim=0) * (Sn > 0).long()

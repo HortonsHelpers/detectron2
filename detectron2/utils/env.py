@@ -26,7 +26,7 @@ def seed_all_rng(seed=None):
             + int.from_bytes(os.urandom(2), "big")
         )
         logger = logging.getLogger(__name__)
-        logger.info("Using a generated random seed {}".format(seed))
+        logger.info(f"Using a generated random seed {seed}")
     np.random.seed(seed)
     torch.set_rng_state(torch.manual_seed(seed).get_state())
     random.seed(seed)
@@ -80,13 +80,8 @@ def setup_environment():
 
     _configure_libraries()
 
-    custom_module_path = os.environ.get("DETECTRON2_ENV_MODULE")
-
-    if custom_module_path:
+    if custom_module_path := os.environ.get("DETECTRON2_ENV_MODULE"):
         setup_custom_environment(custom_module_path)
-    else:
-        # The default setup is a no-op
-        pass
 
 
 def setup_custom_environment(custom_module):
@@ -98,8 +93,7 @@ def setup_custom_environment(custom_module):
         module = _import_file("detectron2.utils.env.custom_module", custom_module)
     else:
         module = importlib.import_module(custom_module)
-    assert hasattr(module, "setup_environment") and callable(module.setup_environment), (
-        "Custom environment module defined in {} does not have the "
-        "required callable attribute 'setup_environment'."
-    ).format(custom_module)
+    assert hasattr(module, "setup_environment") and callable(
+        module.setup_environment
+    ), f"Custom environment module defined in {custom_module} does not have the required callable attribute 'setup_environment'."
     module.setup_environment()

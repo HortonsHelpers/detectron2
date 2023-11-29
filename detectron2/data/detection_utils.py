@@ -75,17 +75,11 @@ def check_image_size(dataset_dict, image):
     Raise an error if the image does not match the size specified in the dict.
     """
     if "width" in dataset_dict or "height" in dataset_dict:
-        image_wh = (image.shape[1], image.shape[0])
         expected_wh = (dataset_dict["width"], dataset_dict["height"])
-        if not image_wh == expected_wh:
+        image_wh = (image.shape[1], image.shape[0])
+        if image_wh != expected_wh:
             raise SizeMismatchError(
-                "Mismatched (W,H){}, got {}, expect {}".format(
-                    " for image " + dataset_dict["file_name"]
-                    if "file_name" in dataset_dict
-                    else "",
-                    image_wh,
-                    expected_wh,
-                )
+                f'Mismatched (W,H){" for image " + dataset_dict["file_name"] if "file_name" in dataset_dict else ""}, got {image_wh}, expect {expected_wh}'
             )
 
     # To ensure bbox always remap to original image size
@@ -183,9 +177,7 @@ def transform_instance_annotations(
             annotation["segmentation"] = mask
         else:
             raise ValueError(
-                "Cannot transform segmentation of type '{}'!"
-                "Supported types are: polygons as list[list[float] or ndarray],"
-                " COCO-style RLE as a dict.".format(type(segm))
+                f"Cannot transform segmentation of type '{type(segm)}'!Supported types are: polygons as list[list[float] or ndarray], COCO-style RLE as a dict."
             )
 
     if "keypoints" in annotation:
@@ -271,17 +263,12 @@ def annotations_to_instances(annos, image_size, mask_format="polygon"):
                     # COCO RLE
                     masks.append(mask_util.decode(segm))
                 elif isinstance(segm, np.ndarray):
-                    assert segm.ndim == 2, "Expect segmentation of 2 dimensions, got {}.".format(
-                        segm.ndim
-                    )
+                    assert segm.ndim == 2, f"Expect segmentation of 2 dimensions, got {segm.ndim}."
                     # mask array
                     masks.append(segm)
                 else:
                     raise ValueError(
-                        "Cannot convert segmentation of type '{}' to BitMasks!"
-                        "Supported types are: polygons as list[list[float] or ndarray],"
-                        " COCO-style RLE as a dict, or a full-image segmentation mask "
-                        "as a 2D ndarray.".format(type(segm))
+                        f"Cannot convert segmentation of type '{type(segm)}' to BitMasks!Supported types are: polygons as list[list[float] or ndarray], COCO-style RLE as a dict, or a full-image segmentation mask as a 2D ndarray."
                     )
             masks = BitMasks(torch.stack([torch.from_numpy(x) for x in masks]))
         target.gt_masks = masks
@@ -416,14 +403,12 @@ def check_metadata_consistency(key, dataset_names):
     for idx, entry in enumerate(entries_per_dataset):
         if entry != entries_per_dataset[0]:
             logger.error(
-                "Metadata '{}' for dataset '{}' is '{}'".format(key, dataset_names[idx], str(entry))
+                f"Metadata '{key}' for dataset '{dataset_names[idx]}' is '{str(entry)}'"
             )
             logger.error(
-                "Metadata '{}' for dataset '{}' is '{}'".format(
-                    key, dataset_names[0], str(entries_per_dataset[0])
-                )
+                f"Metadata '{key}' for dataset '{dataset_names[0]}' is '{str(entries_per_dataset[0])}'"
             )
-            raise ValueError("Datasets have different metadata '{}'!".format(key))
+            raise ValueError(f"Datasets have different metadata '{key}'!")
 
 
 def build_transform_gen(cfg, is_train):
@@ -443,14 +428,13 @@ def build_transform_gen(cfg, is_train):
         max_size = cfg.INPUT.MAX_SIZE_TEST
         sample_style = "choice"
     if sample_style == "range":
-        assert len(min_size) == 2, "more than 2 ({}) min_size(s) are provided for ranges".format(
-            len(min_size)
-        )
+        assert (
+            len(min_size) == 2
+        ), f"more than 2 ({len(min_size)}) min_size(s) are provided for ranges"
 
     logger = logging.getLogger(__name__)
-    tfm_gens = []
-    tfm_gens.append(T.ResizeShortestEdge(min_size, max_size, sample_style))
+    tfm_gens = [T.ResizeShortestEdge(min_size, max_size, sample_style)]
     if is_train:
         tfm_gens.append(T.RandomFlip())
-        logger.info("TransformGens used in training: " + str(tfm_gens))
+        logger.info(f"TransformGens used in training: {tfm_gens}")
     return tfm_gens

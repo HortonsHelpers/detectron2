@@ -38,7 +38,7 @@ class DatasetMapper:
                 MetadataCatalog.get(ds).densepose_transform_src
                 for ds in cfg.DATASETS.TRAIN + cfg.DATASETS.TEST
             ]
-            assert len(densepose_transform_srcs) > 0
+            assert densepose_transform_srcs
             # TODO: check that DensePose transformation data is the same for
             # all the datasets. Otherwise one would have to pass DB ID with
             # each entry to select proper transformation data. For now, since

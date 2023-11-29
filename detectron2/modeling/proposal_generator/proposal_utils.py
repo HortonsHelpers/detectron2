@@ -52,6 +52,4 @@ def add_ground_truth_to_proposals_single_image(gt_boxes, proposals):
 
     gt_proposal.proposal_boxes = gt_boxes
     gt_proposal.objectness_logits = gt_logits
-    new_proposals = Instances.cat([proposals, gt_proposal])
-
-    return new_proposals
+    return Instances.cat([proposals, gt_proposal])

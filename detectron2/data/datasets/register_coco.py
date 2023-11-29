@@ -74,7 +74,7 @@ def register_coco_panoptic_separated(
         sem_seg_root (str): directory which contains all the ground truth segmentation annotations.
         instances_json (str): path to the json instance annotation file
     """
-    panoptic_name = name + "_separated"
+    panoptic_name = f"{name}_separated"
     DatasetCatalog.register(
         panoptic_name,
         lambda: merge_to_panoptic(
@@ -92,7 +92,7 @@ def register_coco_panoptic_separated(
         **metadata
     )
 
-    semantic_name = name + "_stuffonly"
+    semantic_name = f"{name}_stuffonly"
     DatasetCatalog.register(semantic_name, lambda: load_sem_seg(sem_seg_root, image_root))
     MetadataCatalog.get(semantic_name).set(
         sem_seg_root=sem_seg_root, image_root=image_root, evaluator_type="sem_seg", **metadata
@@ -115,7 +115,7 @@ def merge_to_panoptic(detection_dicts, sem_seg_dicts):
     """
     results = []
     sem_seg_file_to_entry = {x["file_name"]: x for x in sem_seg_dicts}
-    assert len(sem_seg_file_to_entry) > 0
+    assert sem_seg_file_to_entry
 
     for det_dict in detection_dicts:
         dic = copy.copy(det_dict)

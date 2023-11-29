@@ -70,7 +70,7 @@ def default_argument_parser():
     # Therefore we use a deterministic way to obtain port,
     # so that users are aware of orphan processes by seeing the port occupied.
     port = 2 ** 15 + 2 ** 14 + hash(os.getuid()) % 2 ** 14
-    parser.add_argument("--dist-url", default="tcp://127.0.0.1:{}".format(port))
+    parser.add_argument("--dist-url", default=f"tcp://127.0.0.1:{port}")
     parser.add_argument(
         "opts",
         help="Modify config options using the command-line",
@@ -100,25 +100,25 @@ def default_setup(cfg, args):
     setup_logger(output_dir, distributed_rank=rank, name="fvcore")
     logger = setup_logger(output_dir, distributed_rank=rank)
 
-    logger.info("Rank of current process: {}. World size: {}".format(rank, comm.get_world_size()))
+    logger.info(
+        f"Rank of current process: {rank}. World size: {comm.get_world_size()}"
+    )
     logger.info("Environment info:\n" + collect_env_info())
 
-    logger.info("Command line arguments: " + str(args))
+    logger.info(f"Command line arguments: {str(args)}")
     if hasattr(args, "config_file") and args.config_file != "":
         logger.info(
-            "Contents of args.config_file={}:\n{}".format(
-                args.config_file, PathManager.open(args.config_file, "r").read()
-            )
+            f'Contents of args.config_file={args.config_file}:\n{PathManager.open(args.config_file, "r").read()}'
         )
 
-    logger.info("Running with full config:\n{}".format(cfg))
+    logger.info(f"Running with full config:\n{cfg}")
     if comm.is_main_process() and output_dir:
         # Note: some of our scripts may expect the existence of
         # config.yaml in output directory
         path = os.path.join(output_dir, "config.yaml")
         with PathManager.open(path, "w") as f:
             f.write(cfg.dump())
-        logger.info("Full config saved to {}".format(os.path.abspath(path)))
+        logger.info(f"Full config saved to {os.path.abspath(path)}")
 
     # make sure each worker has a different, yet deterministic seed if specified
     seed_all_rng(None if cfg.SEED < 0 else cfg.SEED + rank)
@@ -186,8 +186,7 @@ class DefaultPredictor:
             image = torch.as_tensor(image.astype("float32").transpose(2, 0, 1))
 
             inputs = {"image": image, "height": height, "width": width}
-            predictions = self.model([inputs])[0]
-            return predictions
+            return self.model([inputs])[0]
 
 
 class DefaultTrainer(SimpleTrainer):
@@ -383,7 +382,7 @@ class DefaultTrainer(SimpleTrainer):
         """
         model = build_model(cfg)
         logger = logging.getLogger(__name__)
-        logger.info("Model:\n{}".format(model))
+        logger.info(f"Model:\n{model}")
         return model
 
     @classmethod
@@ -457,9 +456,9 @@ class DefaultTrainer(SimpleTrainer):
         if isinstance(evaluators, DatasetEvaluator):
             evaluators = [evaluators]
         if evaluators is not None:
-            assert len(cfg.DATASETS.TEST) == len(evaluators), "{} != {}".format(
-                len(cfg.DATASETS.TEST), len(evaluators)
-            )
+            assert len(cfg.DATASETS.TEST) == len(
+                evaluators
+            ), f"{len(cfg.DATASETS.TEST)} != {len(evaluators)}"
 
         results = OrderedDict()
         for idx, dataset_name in enumerate(cfg.DATASETS.TEST):
@@ -483,10 +482,8 @@ class DefaultTrainer(SimpleTrainer):
             if comm.is_main_process():
                 assert isinstance(
                     results_i, dict
-                ), "Evaluator must return a dict on the main process. Got {} instead.".format(
-                    results_i
-                )
-                logger.info("Evaluation results for {} in csv format:".format(dataset_name))
+                ), f"Evaluator must return a dict on the main process. Got {results_i} instead."
+                logger.info(f"Evaluation results for {dataset_name} in csv format:")
                 print_csv_format(results_i)
 
         if len(results) == 1:

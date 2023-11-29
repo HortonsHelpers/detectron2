@@ -104,11 +104,7 @@ class TridentBottleneckBlock(ResNetBlockBase):
 
         out = [self.conv3(b) for b in out]
 
-        if self.shortcut is not None:
-            shortcut = [self.shortcut(b) for b in x]
-        else:
-            shortcut = x
-
+        shortcut = [self.shortcut(b) for b in x] if self.shortcut is not None else x
         out = [out_b + shortcut_b for out_b, shortcut_b in zip(out, shortcut)]
         out = [F.relu_(b) for b in out]
         if self.concat_output:
@@ -168,7 +164,7 @@ def build_trident_resnet_backbone(cfg, input_shape):
     trident_stage        = cfg.MODEL.TRIDENT.TRIDENT_STAGE
     test_branch_idx      = cfg.MODEL.TRIDENT.TEST_BRANCH_IDX
     # fmt: on
-    assert res5_dilation in {1, 2}, "res5_dilation cannot be {}.".format(res5_dilation)
+    assert res5_dilation in {1, 2}, f"res5_dilation cannot be {res5_dilation}."
 
     num_blocks_per_stage = {50: [3, 4, 6, 3], 101: [3, 4, 23, 3], 152: [3, 8, 36, 3]}[depth]
 

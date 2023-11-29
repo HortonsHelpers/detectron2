@@ -630,11 +630,10 @@ class StandardROIHeads(ROIHeads):
         )
         if self.training:
             return outputs.losses()
-        else:
-            pred_instances, _ = outputs.inference(
-                self.test_score_thresh, self.test_nms_thresh, self.test_detections_per_img
-            )
-            return pred_instances
+        pred_instances, _ = outputs.inference(
+            self.test_score_thresh, self.test_nms_thresh, self.test_detections_per_img
+        )
+        return pred_instances
 
     def _forward_mask(self, features, instances):
         """
@@ -684,8 +683,6 @@ class StandardROIHeads(ROIHeads):
         if not self.keypoint_on:
             return {} if self.training else instances
 
-        num_images = len(instances)
-
         if self.training:
             # The loss is defined on positive proposals with at >=1 visible keypoints.
             proposals, _ = select_foreground_proposals(instances, self.num_classes)
@@ -694,6 +691,8 @@ class StandardROIHeads(ROIHeads):
 
             keypoint_features = self.keypoint_pooler(features, proposal_boxes)
             keypoint_logits = self.keypoint_head(keypoint_features)
+
+            num_images = len(instances)
 
             normalizer = (
                 num_images

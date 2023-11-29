@@ -41,8 +41,8 @@ def load_cityscapes_instances(image_dir, gt_dir, from_json=True, to_polygons=Tru
             "Converting to mask format is not supported now."
         )
     files = []
+    suffix = "leftImg8bit.png"
     for image_file in glob.glob(os.path.join(image_dir, "**/*.png")):
-        suffix = "leftImg8bit.png"
         assert image_file.endswith(suffix)
         prefix = image_dir
         instance_file = gt_dir + image_file[len(prefix) : -len(suffix)] + "gtFine_instanceIds.png"
@@ -53,7 +53,7 @@ def load_cityscapes_instances(image_dir, gt_dir, from_json=True, to_polygons=Tru
 
         json_file = gt_dir + image_file[len(prefix) : -len(suffix)] + "gtFine_polygons.json"
         files.append((image_file, instance_file, label_file, json_file))
-    assert len(files), "No images found in {}".format(image_dir)
+    assert len(files), f"No images found in {image_dir}"
 
     logger = logging.getLogger(__name__)
     logger.info("Preprocessing cityscapes annotations ...")
@@ -65,7 +65,7 @@ def load_cityscapes_instances(image_dir, gt_dir, from_json=True, to_polygons=Tru
         functools.partial(cityscapes_files_to_dict, from_json=from_json, to_polygons=to_polygons),
         files,
     )
-    logger.info("Loaded {} images from {}".format(len(ret), image_dir))
+    logger.info(f"Loaded {len(ret)} images from {image_dir}")
 
     # Map cityscape ids to contiguous ids
     from cityscapesscripts.helpers.labels import labels
@@ -89,8 +89,8 @@ def load_cityscapes_semantic(image_dir, gt_dir):
             "sem_seg_file_name".
     """
     ret = []
+    suffix = "leftImg8bit.png"
     for image_file in glob.glob(os.path.join(image_dir, "**/*.png")):
-        suffix = "leftImg8bit.png"
         assert image_file.endswith(suffix)
         prefix = image_dir
 
@@ -189,23 +189,15 @@ def cityscapes_files_to_dict(files, from_json, to_polygons):
                 continue
             polygons_union = polygons_union.union(poly)
 
-            anno = {}
-            anno["iscrowd"] = label_name.endswith("group")
-            anno["category_id"] = label.id
-
+            anno = {"iscrowd": label_name.endswith("group"), "category_id": label.id}
             if isinstance(poly_wo_overlaps, Polygon):
                 poly_list = [poly_wo_overlaps]
             elif isinstance(poly_wo_overlaps, MultiPolygon):
                 poly_list = poly_wo_overlaps.geoms
             else:
-                raise NotImplementedError("Unknown geometric structure {}".format(poly_wo_overlaps))
+                raise NotImplementedError(f"Unknown geometric structure {poly_wo_overlaps}")
 
-            poly_coord = []
-            for poly_el in poly_list:
-                # COCO API can work only with exterior boundaries now, hence we store only them.
-                # TODO: store both exterior and interior boundaries once other parts of the
-                # codebase support holes in polygons.
-                poly_coord.append(list(chain(*poly_el.exterior.coords)))
+            poly_coord = [list(chain(*poly_el.exterior.coords)) for poly_el in poly_list]
             anno["segmentation"] = poly_coord
             (xmin, ymin, xmax, ymax) = poly_wo_overlaps.bounds
 
@@ -236,10 +228,7 @@ def cityscapes_files_to_dict(files, from_json, to_polygons):
             if not label.hasInstances or label.ignoreInEval:
                 continue
 
-            anno = {}
-            anno["iscrowd"] = instance_id < 1000
-            anno["category_id"] = label.id
-
+            anno = {"iscrowd": instance_id < 1000, "category_id": label.id}
             mask = np.asarray(inst_image == instance_id, dtype=np.uint8, order="F")
 
             inds = np.nonzero(mask)
@@ -255,11 +244,12 @@ def cityscapes_files_to_dict(files, from_json, to_polygons):
                 contours = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_NONE)[
                     -2
                 ]
-                polygons = [c.reshape(-1).tolist() for c in contours if len(c) >= 3]
-                # opencv's can produce invalid polygons
-                if len(polygons) == 0:
+                if polygons := [
+                    c.reshape(-1).tolist() for c in contours if len(c) >= 3
+                ]:
+                    anno["segmentation"] = polygons
+                else:
                     continue
-                anno["segmentation"] = polygons
             else:
                 anno["segmentation"] = mask_util.encode(mask[:, :, None])[0]
             annos.append(anno)
@@ -295,14 +285,14 @@ if __name__ == "__main__":
         dicts = load_cityscapes_instances(
             args.image_dir, args.gt_dir, from_json=True, to_polygons=True
         )
-        logger.info("Done loading {} samples.".format(len(dicts)))
+        logger.info(f"Done loading {len(dicts)} samples.")
 
         thing_classes = [k.name for k in labels if k.hasInstances and not k.ignoreInEval]
         meta = Metadata().set(thing_classes=thing_classes)
 
     else:
         dicts = load_cityscapes_semantic(args.image_dir, args.gt_dir)
-        logger.info("Done loading {} samples.".format(len(dicts)))
+        logger.info(f"Done loading {len(dicts)} samples.")
 
         stuff_names = [k.name for k in labels if k.trainId != 255]
         stuff_colors = [k.color for k in labels if k.trainId != 255]

@@ -66,7 +66,7 @@ if __name__ == "__main__":
     mp.set_start_method("spawn", force=True)
     args = get_parser().parse_args()
     logger = setup_logger()
-    logger.info("Arguments: " + str(args))
+    logger.info(f"Arguments: {str(args)}")
 
     cfg = setup_cfg(args)
 
@@ -120,7 +120,7 @@ if __name__ == "__main__":
         if args.output:
             if os.path.isdir(args.output):
                 output_fname = os.path.join(args.output, basename)
-                output_fname = os.path.splitext(output_fname)[0] + ".mkv"
+                output_fname = f"{os.path.splitext(output_fname)[0]}.mkv"
             else:
                 output_fname = args.output
             assert not os.path.isfile(output_fname), output_fname

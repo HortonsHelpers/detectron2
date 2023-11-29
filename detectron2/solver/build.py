@@ -28,8 +28,7 @@ def build_optimizer(cfg: CfgNode, model: torch.nn.Module) -> torch.optim.Optimiz
             weight_decay = cfg.SOLVER.WEIGHT_DECAY_BIAS
         params += [{"params": [value], "lr": lr, "weight_decay": weight_decay}]
 
-    optimizer = torch.optim.SGD(params, lr, momentum=cfg.SOLVER.MOMENTUM)
-    return optimizer
+    return torch.optim.SGD(params, lr, momentum=cfg.SOLVER.MOMENTUM)
 
 
 def build_lr_scheduler(
@@ -57,4 +56,4 @@ def build_lr_scheduler(
             warmup_method=cfg.SOLVER.WARMUP_METHOD,
         )
     else:
-        raise ValueError("Unknown LR scheduler: {}".format(name))
+        raise ValueError(f"Unknown LR scheduler: {name}")

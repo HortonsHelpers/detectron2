@@ -37,9 +37,9 @@ class CfgNode(_CfgNode):
             from .compat import guess_version
 
             loaded_ver = guess_version(loaded_cfg, cfg_filename)
-        assert loaded_ver <= self.VERSION, "Cannot merge a v{} config into a v{} config.".format(
-            loaded_ver, self.VERSION
-        )
+        assert (
+            loaded_ver <= self.VERSION
+        ), f"Cannot merge a v{loaded_ver} config into a v{self.VERSION} config."
 
         if loaded_ver == self.VERSION:
             self.merge_from_other_cfg(loaded_cfg)
@@ -48,10 +48,7 @@ class CfgNode(_CfgNode):
             from .compat import upgrade_config, downgrade_config
 
             logger.warning(
-                "Loading an old v{} config file '{}' by automatically upgrading to v{}. "
-                "See docs/CHANGELOG.md for instructions to update your files.".format(
-                    loaded_ver, cfg_filename, self.VERSION
-                )
+                f"Loading an old v{loaded_ver} config file '{cfg_filename}' by automatically upgrading to v{self.VERSION}. See docs/CHANGELOG.md for instructions to update your files."
             )
             # To convert, first obtain a full config at an old version
             old_self = downgrade_config(self, to_version=loaded_ver)

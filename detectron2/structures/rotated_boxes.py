@@ -239,8 +239,7 @@ class RotatedBoxes(Boxes):
             torch.Tensor: a vector with areas of each box.
         """
         box = self.tensor
-        area = box[:, 2] * box[:, 3]
-        return area
+        return box[:, 2] * box[:, 3]
 
     def normalize_angles(self) -> None:
         """
@@ -310,8 +309,7 @@ class RotatedBoxes(Boxes):
         box = self.tensor
         widths = box[:, 2]
         heights = box[:, 3]
-        keep = (widths > threshold) & (heights > threshold)
-        return keep
+        return (widths > threshold) & (heights > threshold)
 
     def __getitem__(self, item: Union[int, slice, torch.BoolTensor]) -> "RotatedBoxes":
         """
@@ -331,16 +329,16 @@ class RotatedBoxes(Boxes):
         if isinstance(item, int):
             return RotatedBoxes(self.tensor[item].view(1, -1))
         b = self.tensor[item]
-        assert b.dim() == 2, "Indexing on RotatedBoxes with {} failed to return a matrix!".format(
-            item
-        )
+        assert (
+            b.dim() == 2
+        ), f"Indexing on RotatedBoxes with {item} failed to return a matrix!"
         return RotatedBoxes(b)
 
     def __len__(self) -> int:
         return self.tensor.shape[0]
 
     def __repr__(self) -> str:
-        return "RotatedBoxes(" + str(self.tensor) + ")"
+        return f"RotatedBoxes({str(self.tensor)})"
 
     def inside_box(self, box_size: Boxes.BoxSizeType, boundary_threshold: int = 0) -> torch.Tensor:
         """
@@ -370,14 +368,12 @@ class RotatedBoxes(Boxes):
         max_rect_dx = c * half_w + s * half_h
         max_rect_dy = c * half_h + s * half_w
 
-        inds_inside = (
+        return (
             (cnt_x - max_rect_dx >= -boundary_threshold)
             & (cnt_y - max_rect_dy >= -boundary_threshold)
             & (cnt_x + max_rect_dx < width + boundary_threshold)
             & (cnt_y + max_rect_dy < height + boundary_threshold)
         )
-
-        return inds_inside
 
     def get_centers(self) -> torch.Tensor:
         """
@@ -452,7 +448,7 @@ class RotatedBoxes(Boxes):
         self.tensor[:, 4] = torch.atan2(scale_x * s, scale_y * c) * 180 / math.pi
 
     @staticmethod
-    def cat(boxes_list: List["RotatedBoxes"]) -> "RotatedBoxes":  # type: ignore
+    def cat(boxes_list: List["RotatedBoxes"]) -> "RotatedBoxes":    # type: ignore
         """
         Concatenates a list of RotatedBoxes into a single RotatedBoxes
 
@@ -463,11 +459,10 @@ class RotatedBoxes(Boxes):
             RotatedBoxes: the concatenated RotatedBoxes
         """
         assert isinstance(boxes_list, (list, tuple))
-        assert len(boxes_list) > 0
+        assert boxes_list
         assert all(isinstance(box, RotatedBoxes) for box in boxes_list)
 
-        cat_boxes = type(boxes_list[0])(cat([b.tensor for b in boxes_list], dim=0))
-        return cat_boxes
+        return type(boxes_list[0])(cat([b.tensor for b in boxes_list], dim=0))
 
     @property
     def device(self) -> str:

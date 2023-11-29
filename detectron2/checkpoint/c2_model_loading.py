@@ -240,7 +240,7 @@ def align_and_update_state_dicts(model_state_dict, ckpt_state_dict, c2_conversio
         # Matched ckpt_key should be a complete (starts with '.') suffix.
         # For example, roi_heads.mesh_head.whatever_conv1 does not match conv1,
         # but matches whatever_conv1 or mesh_head.whatever_conv1.
-        return a == b or a.endswith("." + b)
+        return a == b or a.endswith(f".{b}")
 
     # get a matrix of string matches, where each (i, j) entry correspond to the size of the
     # ckpt_key string, if it matches
