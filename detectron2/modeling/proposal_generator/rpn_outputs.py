@@ -434,9 +434,8 @@ class RPNOutputs(object):
             pred_objectness_logits (list[Tensor]): A list of L tensors. Tensor i has shape
                 (N, Hi*Wi*A).
         """
-        pred_objectness_logits = [
+        return [
             # Reshape: (N, A, Hi, Wi) -> (N, Hi, Wi, A) -> (N, Hi*Wi*A)
             score.permute(0, 2, 3, 1).reshape(self.num_images, -1)
             for score in self.pred_objectness_logits
         ]
-        return pred_objectness_logits

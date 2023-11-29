@@ -119,7 +119,7 @@ class TrainerBase:
             start_iter, max_iter (int): See docs above
         """
         logger = logging.getLogger(__name__)
-        logger.info("Starting training from iteration {}".format(start_iter))
+        logger.info(f"Starting training from iteration {start_iter}")
 
         self.iter = self.start_iter = start_iter
         self.max_iter = max_iter
@@ -210,7 +210,7 @@ class SimpleTrainer(TrainerBase):
         If your want to do something with the losses, you can wrap the model.
         """
         loss_dict = self.model(data)
-        losses = sum(loss for loss in loss_dict.values())
+        losses = sum(loss_dict.values())
         self._detect_anomaly(losses, loss_dict)
 
         metrics_dict = loss_dict
@@ -233,9 +233,7 @@ class SimpleTrainer(TrainerBase):
     def _detect_anomaly(self, losses, loss_dict):
         if not torch.isfinite(losses).all():
             raise FloatingPointError(
-                "Loss became infinite or NaN at iteration={}!\nloss_dict = {}".format(
-                    self.iter, loss_dict
-                )
+                f"Loss became infinite or NaN at iteration={self.iter}!\nloss_dict = {loss_dict}"
             )
 
     def _write_metrics(self, metrics_dict: dict):
@@ -263,7 +261,7 @@ class SimpleTrainer(TrainerBase):
             metrics_dict = {
                 k: np.mean([x[k] for x in all_metrics_dict]) for k in all_metrics_dict[0].keys()
             }
-            total_losses_reduced = sum(loss for loss in metrics_dict.values())
+            total_losses_reduced = sum(metrics_dict.values())
 
             self.storage.put_scalar("total_loss", total_losses_reduced)
             if len(metrics_dict) > 1:

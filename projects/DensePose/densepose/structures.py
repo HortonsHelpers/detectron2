@@ -28,13 +28,11 @@ class DensePoseTransformData(object):
         uv_symmetry_map_torch = {}
         for key in ["U_transforms", "V_transforms"]:
             map_src = uv_symmetry_map[key]
-            uv_symmetry_map_torch[key] = []
-            for i in range(uv_symmetry_map[key].shape[1]):
-                uv_symmetry_map_torch[key].append(
-                    torch.from_numpy(map_src[0, i]).to(dtype=torch.float)
-                )
-        transform_data = DensePoseTransformData(uv_symmetry_map_torch)
-        return transform_data
+            uv_symmetry_map_torch[key] = [
+                torch.from_numpy(map_src[0, i]).to(dtype=torch.float)
+                for i in range(map_src.shape[1])
+            ]
+        return DensePoseTransformData(uv_symmetry_map_torch)
 
 
 class DensePoseDataRelative(object):
@@ -74,7 +72,7 @@ class DensePoseDataRelative(object):
 
     def __init__(self, annotation, cleanup=False):
         is_valid, reason_not_valid = DensePoseDataRelative.validate_annotation(annotation)
-        assert is_valid, "Invalid DensePose annotations: {}".format(reason_not_valid)
+        assert is_valid, f"Invalid DensePose annotations: {reason_not_valid}"
         self.x = torch.as_tensor(annotation[DensePoseDataRelative.X_KEY])
         self.y = torch.as_tensor(annotation[DensePoseDataRelative.Y_KEY])
         self.i = torch.as_tensor(annotation[DensePoseDataRelative.I_KEY])
@@ -106,25 +104,28 @@ class DensePoseDataRelative(object):
         poly_specs = annotation[DensePoseDataRelative.S_KEY]
         segm = torch.zeros((DensePoseDataRelative.MASK_SIZE,) * 2, dtype=torch.float32)
         for i in range(DensePoseDataRelative.N_BODY_PARTS):
-            poly_i = poly_specs[i]
-            if poly_i:
+            if poly_i := poly_specs[i]:
                 mask_i = mask_utils.decode(poly_i)
                 segm[mask_i > 0] = i + 1
         return segm
 
     @staticmethod
     def validate_annotation(annotation):
-        for key in [
-            DensePoseDataRelative.X_KEY,
-            DensePoseDataRelative.Y_KEY,
-            DensePoseDataRelative.I_KEY,
-            DensePoseDataRelative.U_KEY,
-            DensePoseDataRelative.V_KEY,
-            DensePoseDataRelative.S_KEY,
-        ]:
-            if key not in annotation:
-                return False, "no {key} data in the annotation".format(key=key)
-        return True, None
+        return next(
+            (
+                (False, "no {key} data in the annotation".format(key=key))
+                for key in [
+                    DensePoseDataRelative.X_KEY,
+                    DensePoseDataRelative.Y_KEY,
+                    DensePoseDataRelative.I_KEY,
+                    DensePoseDataRelative.U_KEY,
+                    DensePoseDataRelative.V_KEY,
+                    DensePoseDataRelative.S_KEY,
+                ]
+                if key not in annotation
+            ),
+            (True, None),
+        )
 
     @staticmethod
     def cleanup_annotation(annotation):
@@ -206,42 +207,28 @@ class DensePoseOutput(object):
     def _check_output_dims(self, S, I, U, V):
         assert (
             len(S.size()) == 4
-        ), "Segmentation output should have 4 " "dimensions (NCHW), but has size {}".format(
-            S.size()
-        )
+        ), f"Segmentation output should have 4 dimensions (NCHW), but has size {S.size()}"
         assert (
             len(I.size()) == 4
-        ), "Segmentation output should have 4 " "dimensions (NCHW), but has size {}".format(
-            S.size()
-        )
+        ), f"Segmentation output should have 4 dimensions (NCHW), but has size {S.size()}"
         assert (
             len(U.size()) == 4
-        ), "Segmentation output should have 4 " "dimensions (NCHW), but has size {}".format(
-            S.size()
-        )
+        ), f"Segmentation output should have 4 dimensions (NCHW), but has size {S.size()}"
         assert (
             len(V.size()) == 4
-        ), "Segmentation output should have 4 " "dimensions (NCHW), but has size {}".format(
-            S.size()
-        )
-        assert len(S) == len(I), (
-            "Number of output segmentation planes {} "
-            "should be equal to the number of output part index "
-            "planes {}".format(len(S), len(I))
-        )
-        assert S.size()[2:] == I.size()[2:], (
-            "Output segmentation plane size {} "
-            "should be equal to the output part index "
-            "plane size {}".format(S.size()[2:], I.size()[2:])
-        )
-        assert I.size() == U.size(), (
-            "Part index output shape {} "
-            "should be the same as U coordinates output shape {}".format(I.size(), U.size())
-        )
-        assert I.size() == V.size(), (
-            "Part index output shape {} "
-            "should be the same as V coordinates output shape {}".format(I.size(), V.size())
-        )
+        ), f"Segmentation output should have 4 dimensions (NCHW), but has size {S.size()}"
+        assert len(S) == len(
+            I
+        ), f"Number of output segmentation planes {len(S)} should be equal to the number of output part index planes {len(I)}"
+        assert (
+            S.size()[2:] == I.size()[2:]
+        ), f"Output segmentation plane size {S.size()[2:]} should be equal to the output part index plane size {I.size()[2:]}"
+        assert (
+            I.size() == U.size()
+        ), f"Part index output shape {I.size()} should be the same as U coordinates output shape {U.size()}"
+        assert (
+            I.size() == V.size()
+        ), f"Part index output shape {I.size()} should be the same as V coordinates output shape {V.size()}"
 
     def resize(self, image_size_hw):
         # do nothing - outputs are invariant to resize
@@ -275,10 +262,10 @@ class DensePoseOutput(object):
         grid = torch.stack(grid, dim=2).to(S.device)
         assert (
             grid.size(0) == hsize
-        ), "Resampled grid expected " "height={}, actual height={}".format(hsize, grid.size(0))
-        assert grid.size(1) == wsize, "Resampled grid expected " "width={}, actual width={}".format(
-            wsize, grid.size(1)
-        )
+        ), f"Resampled grid expected height={hsize}, actual height={grid.size(0)}"
+        assert (
+            grid.size(1) == wsize
+        ), f"Resampled grid expected width={wsize}, actual width={grid.size(1)}"
         S_new = F.grid_sample(
             S.unsqueeze(0),
             torch.unsqueeze(grid, 0),
@@ -325,8 +312,7 @@ class DensePoseOutput(object):
         Convert DensePose outputs to results format. Results are more compact,
         but cannot be resampled any more
         """
-        result = DensePoseResult(boxes_xywh, self.S, self.I, self.U, self.V)
-        return result
+        return DensePoseResult(boxes_xywh, self.S, self.I, self.U, self.V)
 
     def __getitem__(self, item):
         if isinstance(item, int):
@@ -342,10 +328,7 @@ class DensePoseOutput(object):
         return DensePoseOutput(S_selected, I_selected, U_selected, V_selected)
 
     def __str__(self):
-        s = "DensePoseOutput S {}, I {}, U {}, V {}".format(
-            list(self.S.size()), list(self.I.size()), list(self.U.size()), list(self.V.size())
-        )
-        return s
+        return f"DensePoseOutput S {list(self.S.size())}, I {list(self.I.size())}, U {list(self.U.size())}, V {list(self.V.size())}"
 
     def __len__(self):
         return self.S.size(0)
@@ -365,10 +348,7 @@ class DensePoseResult(object):
             self.results.append(result_encoded_with_shape_i)
 
     def __str__(self):
-        s = "DensePoseResult: N={} [{}]".format(
-            len(self.results), ", ".join([str(list(r[0])) for r in self.results])
-        )
-        return s
+        return f'DensePoseResult: N={len(self.results)} [{", ".join([str(list(r[0])) for r in self.results])}]'
 
     def _output_to_result(self, box_xywh, S, I, U, V):
         x, y, w, h = box_xywh
@@ -377,22 +357,22 @@ class DensePoseResult(object):
         result = torch.zeros([3, h, w], dtype=torch.uint8, device=U.device)
         assert (
             len(S.size()) == 4
-        ), "AnnIndex tensor size should have {} " "dimensions but has {}".format(4, len(S.size()))
+        ), f"AnnIndex tensor size should have 4 dimensions but has {len(S.size())}"
         s_bbox = F.interpolate(S, (h, w), mode="bilinear", align_corners=False).argmax(dim=1)
         assert (
             len(I.size()) == 4
-        ), "IndexUV tensor size should have {} " "dimensions but has {}".format(4, len(S.size()))
+        ), f"IndexUV tensor size should have 4 dimensions but has {len(S.size())}"
         i_bbox = (
             F.interpolate(I, (h, w), mode="bilinear", align_corners=False).argmax(dim=1)
             * (s_bbox > 0).long()
         ).squeeze(0)
-        assert len(U.size()) == 4, "U tensor size should have {} " "dimensions but has {}".format(
-            4, len(U.size())
-        )
+        assert (
+            len(U.size()) == 4
+        ), f"U tensor size should have 4 dimensions but has {len(U.size())}"
         u_bbox = F.interpolate(U, (h, w), mode="bilinear", align_corners=False)
-        assert len(V.size()) == 4, "V tensor size should have {} " "dimensions but has {}".format(
-            4, len(V.size())
-        )
+        assert (
+            len(V.size()) == 4
+        ), f"V tensor size should have 4 dimensions but has {len(V.size())}"
         v_bbox = F.interpolate(V, (h, w), mode="bilinear", align_corners=False)
         result[0] = i_bbox
         for part_id in range(1, u_bbox.size(1)):
@@ -404,10 +384,10 @@ class DensePoseResult(object):
             )
         assert (
             result.size(1) == h
-        ), "Results height {} should be equal" "to bounding box height {}".format(result.size(1), h)
+        ), f"Results height {result.size(1)} should be equalto bounding box height {h}"
         assert (
             result.size(2) == w
-        ), "Results width {} should be equal" "to bounding box width {}".format(result.size(2), w)
+        ), f"Results width {result.size(2)} should be equalto bounding box width {w}"
         return result
 
     @staticmethod
@@ -430,8 +410,7 @@ class DensePoseResult(object):
         im = Image.fromarray(data)
         fstream = BytesIO()
         im.save(fstream, format="png", optimize=True)
-        s = base64.encodebytes(fstream.getvalue()).decode()
-        return s
+        return base64.encodebytes(fstream.getvalue()).decode()
 
     @staticmethod
     def decode_png_data(shape, s):
@@ -459,16 +438,15 @@ class DensePoseList(object):
     _TORCH_DEVICE_CPU = torch.device("cpu")
 
     def __init__(self, densepose_datas, boxes_xyxy_abs, image_size_hw, device=_TORCH_DEVICE_CPU):
-        assert len(densepose_datas) == len(boxes_xyxy_abs), (
-            "Attempt to initialize DensePoseList with {} DensePose datas "
-            "and {} boxes".format(len(densepose_datas), len(boxes_xyxy_abs))
-        )
+        assert len(densepose_datas) == len(
+            boxes_xyxy_abs
+        ), f"Attempt to initialize DensePoseList with {len(densepose_datas)} DensePose datas and {len(boxes_xyxy_abs)} boxes"
         self.densepose_datas = []
         for densepose_data in densepose_datas:
-            assert isinstance(densepose_data, DensePoseDataRelative) or densepose_data is None, (
-                "Attempt to initialize DensePoseList with DensePose datas "
-                "of type {}, expected DensePoseDataRelative".format(type(densepose_data))
-            )
+            assert (
+                isinstance(densepose_data, DensePoseDataRelative)
+                or densepose_data is None
+            ), f"Attempt to initialize DensePoseList with DensePose datas of type {type(densepose_data)}, expected DensePoseDataRelative"
             densepose_data_ondevice = (
                 densepose_data.to(device) if densepose_data is not None else None
             )
@@ -489,16 +467,15 @@ class DensePoseList(object):
         return len(self.densepose_datas)
 
     def __repr__(self):
-        s = self.__class__.__name__ + "("
-        s += "num_instances={}, ".format(len(self.densepose_datas))
-        s += "image_width={}, ".format(self.image_size_hw[1])
-        s += "image_height={})".format(self.image_size_hw[0])
+        s = f"{self.__class__.__name__}("
+        s += f"num_instances={len(self.densepose_datas)}, "
+        s += f"image_width={self.image_size_hw[1]}, "
+        s += f"image_height={self.image_size_hw[0]})"
         return s
 
     def __getitem__(self, item):
         if isinstance(item, int):
-            densepose_data_rel = self.densepose_datas[item]
-            return densepose_data_rel
+            return self.densepose_datas[item]
         elif isinstance(item, slice):
             densepose_datas_rel = self.densepose_datas[item]
             boxes_xyxy_abs = self.boxes_xyxy_abs[item]

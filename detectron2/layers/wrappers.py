@@ -18,9 +18,7 @@ def cat(tensors, dim=0):
     Efficient version of torch.cat that avoids a copy if there is only a single element in a list
     """
     assert isinstance(tensors, (list, tuple))
-    if len(tensors) == 1:
-        return tensors[0]
-    return torch.cat(tensors, dim)
+    return tensors[0] if len(tensors) == 1 else torch.cat(tensors, dim)
 
 
 class _NewEmptyTensorOp(torch.autograd.Function):
@@ -71,19 +69,18 @@ class Conv2d(torch.nn.Conv2d):
             ]
             output_shape = [x.shape[0], self.weight.shape[0]] + output_shape
             empty = _NewEmptyTensorOp.apply(x, output_shape)
-            if self.training:
-                # https://github.com/pytorch/pytorch/issues/12013
-                assert not isinstance(
-                    self.norm, torch.nn.SyncBatchNorm
-                ), "SyncBatchNorm does not support empty inputs!"
-
-                # This is to make DDP happy.
-                # DDP expects all workers to have gradient w.r.t the same set of parameters.
-                _dummy = sum(x.view(-1)[0] for x in self.parameters()) * 0.0
-                return empty + _dummy
-            else:
+            if not self.training:
                 return empty
 
+            # https://github.com/pytorch/pytorch/issues/12013
+            assert not isinstance(
+                self.norm, torch.nn.SyncBatchNorm
+            ), "SyncBatchNorm does not support empty inputs!"
+
+            # This is to make DDP happy.
+            # DDP expects all workers to have gradient w.r.t the same set of parameters.
+            _dummy = sum(x.view(-1)[0] for x in self.parameters()) * 0.0
+            return empty + _dummy
         x = super().forward(x)
         if self.norm is not None:
             x = self.norm(x)

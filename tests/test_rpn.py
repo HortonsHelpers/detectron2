@@ -40,7 +40,7 @@ class RPNTest(unittest.TestCase):
             "loss_rpn_cls": torch.tensor(0.0804563984),
             "loss_rpn_loc": torch.tensor(0.0990132466),
         }
-        for name in expected_losses.keys():
+        for name in expected_losses:
             assert torch.allclose(proposal_losses[name], expected_losses[name])
 
         expected_proposal_boxes = [
@@ -102,7 +102,7 @@ class RPNTest(unittest.TestCase):
             "loss_rpn_cls": torch.tensor(0.0432923734),
             "loss_rpn_loc": torch.tensor(0.1552739739),
         }
-        for name in expected_losses.keys():
+        for name in expected_losses:
             assert torch.allclose(proposal_losses[name], expected_losses[name])
 
         expected_proposal_boxes = [
@@ -192,15 +192,11 @@ class RPNTest(unittest.TestCase):
             # This test can be run on a local machine for 100 times with exactly the same result,
             # However, a different machine might produce slightly different results,
             # thus the atol here.
-            err_msg = "computed proposal boxes = {}, expected {}".format(
-                proposals[i].proposal_boxes.tensor, expected_proposal_boxes[i].tensor
-            )
+            err_msg = f"computed proposal boxes = {proposals[i].proposal_boxes.tensor}, expected {expected_proposal_boxes[i].tensor}"
             assert torch.allclose(
                 proposals[i].proposal_boxes.tensor, expected_proposal_boxes[i].tensor, atol=1e-5
             ), err_msg
-            err_msg = "computed objectness logits = {}, expected {}".format(
-                proposals[i].objectness_logits, expected_objectness_logits[i]
-            )
+            err_msg = f"computed objectness logits = {proposals[i].objectness_logits}, expected {expected_objectness_logits[i]}"
             assert torch.allclose(
                 proposals[i].objectness_logits, expected_objectness_logits[i], atol=1e-5
             ), err_msg

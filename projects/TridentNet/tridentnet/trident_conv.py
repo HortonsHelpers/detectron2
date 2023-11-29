@@ -46,11 +46,7 @@ class TridentConv(nn.Module):
         self.weight = nn.Parameter(
             torch.Tensor(out_channels, in_channels // groups, *self.kernel_size)
         )
-        if bias:
-            self.bias = nn.Parameter(torch.Tensor(out_channels))
-        else:
-            self.bias = None
-
+        self.bias = nn.Parameter(torch.Tensor(out_channels)) if bias else None
         nn.init.kaiming_uniform_(self.weight, nonlinearity="relu")
         if self.bias is not None:
             nn.init.constant_(self.bias, 0)
@@ -94,14 +90,14 @@ class TridentConv(nn.Module):
         return outputs
 
     def extra_repr(self):
-        tmpstr = "in_channels=" + str(self.in_channels)
-        tmpstr += ", out_channels=" + str(self.out_channels)
-        tmpstr += ", kernel_size=" + str(self.kernel_size)
-        tmpstr += ", num_branch=" + str(self.num_branch)
-        tmpstr += ", test_branch_idx=" + str(self.test_branch_idx)
-        tmpstr += ", stride=" + str(self.stride)
-        tmpstr += ", paddings=" + str(self.paddings)
-        tmpstr += ", dilations=" + str(self.dilations)
-        tmpstr += ", groups=" + str(self.groups)
-        tmpstr += ", bias=" + str(self.with_bias)
+        tmpstr = f"in_channels={str(self.in_channels)}"
+        tmpstr += f", out_channels={str(self.out_channels)}"
+        tmpstr += f", kernel_size={str(self.kernel_size)}"
+        tmpstr += f", num_branch={str(self.num_branch)}"
+        tmpstr += f", test_branch_idx={str(self.test_branch_idx)}"
+        tmpstr += f", stride={str(self.stride)}"
+        tmpstr += f", paddings={str(self.paddings)}"
+        tmpstr += f", dilations={str(self.dilations)}"
+        tmpstr += f", groups={str(self.groups)}"
+        tmpstr += f", bias={str(self.with_bias)}"
         return tmpstr

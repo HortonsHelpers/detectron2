@@ -57,8 +57,8 @@ class GeneralizedRCNN(nn.Module):
                 batched_inputs and proposals should have the same length.
         """
 
-        inputs = [x for x in batched_inputs]
-        prop_boxes = [p for p in proposals]
+        inputs = list(batched_inputs)
+        prop_boxes = list(proposals)
         storage = get_event_storage()
         max_vis_prop = 20
 
@@ -74,7 +74,7 @@ class GeneralizedRCNN(nn.Module):
             box_size = min(len(prop.proposal_boxes), max_vis_prop)
             v_pred = Visualizer(img, None)
             v_pred = v_pred.overlay_instances(
-                boxes=prop.proposal_boxes[0:box_size].tensor.cpu().numpy()
+                boxes=prop.proposal_boxes[:box_size].tensor.cpu().numpy()
             )
             prop_img = v_pred.get_image()
             vis_img = np.concatenate((anno_img, prop_img), axis=1)
@@ -173,18 +173,17 @@ class GeneralizedRCNN(nn.Module):
             detected_instances = [x.to(self.device) for x in detected_instances]
             results = self.roi_heads.forward_with_given_boxes(features, detected_instances)
 
-        if do_postprocess:
-            processed_results = []
-            for results_per_image, input_per_image, image_size in zip(
-                results, batched_inputs, images.image_sizes
-            ):
-                height = input_per_image.get("height", image_size[0])
-                width = input_per_image.get("width", image_size[1])
-                r = detector_postprocess(results_per_image, height, width)
-                processed_results.append({"instances": r})
-            return processed_results
-        else:
+        if not do_postprocess:
             return results
+        processed_results = []
+        for results_per_image, input_per_image, image_size in zip(
+            results, batched_inputs, images.image_sizes
+        ):
+            height = input_per_image.get("height", image_size[0])
+            width = input_per_image.get("width", image_size[1])
+            r = detector_postprocess(results_per_image, height, width)
+            processed_results.append({"instances": r})
+        return processed_results
 
     def preprocess_image(self, batched_inputs):
         """

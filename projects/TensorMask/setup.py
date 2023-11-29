@@ -42,13 +42,13 @@ def get_extensions():
         # It's better if pytorch can do this by default ..
         CC = os.environ.get("CC", None)
         if CC is not None:
-            extra_compile_args["nvcc"].append("-ccbin={}".format(CC))
+            extra_compile_args["nvcc"].append(f"-ccbin={CC}")
 
     sources = [os.path.join(extensions_dir, s) for s in sources]
 
     include_dirs = [extensions_dir]
 
-    ext_modules = [
+    return [
         extension(
             "tensormask._C",
             sources,
@@ -57,8 +57,6 @@ def get_extensions():
             extra_compile_args=extra_compile_args,
         )
     ]
-
-    return ext_modules
 
 
 setup(

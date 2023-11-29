@@ -119,7 +119,7 @@ def load_proposals_into_dataset(dataset_dicts, proposal_file):
         list[dict]: the same format as dataset_dicts, but added proposal field.
     """
     logger = logging.getLogger(__name__)
-    logger.info("Loading proposals from: {}".format(proposal_file))
+    logger.info(f"Loading proposals from: {proposal_file}")
 
     with PathManager.open(proposal_file, "rb") as f:
         proposals = pickle.load(f, encoding="latin1")
@@ -156,8 +156,7 @@ def load_proposals_into_dataset(dataset_dicts, proposal_file):
 def _quantize(x, bin_edges):
     bin_edges = copy.copy(bin_edges)
     bin_edges = sorted(bin_edges)
-    quantized = list(map(lambda y: bisect.bisect_right(bin_edges, y), x))
-    return quantized
+    return list(map(lambda y: bisect.bisect_right(bin_edges, y), x))
 
 
 def print_instances_class_histogram(dataset_dicts, class_names):
@@ -178,9 +177,7 @@ def print_instances_class_histogram(dataset_dicts, class_names):
 
     def short_name(x):
         # make long class names shorter. useful for lvis
-        if len(x) > 13:
-            return x[:11] + ".."
-        return x
+        return f"{x[:11]}.." if len(x) > 13 else x
 
     data = list(
         itertools.chain(*[[short_name(class_names[i]), int(v)] for i, v in enumerate(histogram)])
@@ -222,7 +219,7 @@ def get_detection_dataset_dicts(
     assert len(dataset_names)
     dataset_dicts = [DatasetCatalog.get(dataset_name) for dataset_name in dataset_names]
     for dataset_name, dicts in zip(dataset_names, dataset_dicts):
-        assert len(dicts), "Dataset '{}' is empty!".format(dataset_name)
+        assert len(dicts), f"Dataset '{dataset_name}' is empty!"
 
     if proposal_files is not None:
         assert len(dataset_names) == len(proposal_files)
@@ -275,14 +272,10 @@ def build_detection_train_loader(cfg, mapper=None):
     images_per_batch = cfg.SOLVER.IMS_PER_BATCH
     assert (
         images_per_batch % num_workers == 0
-    ), "SOLVER.IMS_PER_BATCH ({}) must be divisible by the number of workers ({}).".format(
-        images_per_batch, num_workers
-    )
+    ), f"SOLVER.IMS_PER_BATCH ({images_per_batch}) must be divisible by the number of workers ({num_workers})."
     assert (
         images_per_batch >= num_workers
-    ), "SOLVER.IMS_PER_BATCH ({}) must be larger than the number of workers ({}).".format(
-        images_per_batch, num_workers
-    )
+    ), f"SOLVER.IMS_PER_BATCH ({images_per_batch}) must be larger than the number of workers ({num_workers})."
     images_per_worker = images_per_batch // num_workers
 
     dataset_dicts = get_detection_dataset_dicts(
@@ -301,7 +294,7 @@ def build_detection_train_loader(cfg, mapper=None):
 
     sampler_name = cfg.DATALOADER.SAMPLER_TRAIN
     logger = logging.getLogger(__name__)
-    logger.info("Using training sampler {}".format(sampler_name))
+    logger.info(f"Using training sampler {sampler_name}")
     if sampler_name == "TrainingSampler":
         sampler = samplers.TrainingSampler(len(dataset))
     elif sampler_name == "RepeatFactorTrainingSampler":
@@ -309,7 +302,7 @@ def build_detection_train_loader(cfg, mapper=None):
             dataset_dicts, cfg.DATALOADER.REPEAT_THRESHOLD
         )
     else:
-        raise ValueError("Unknown training sampler: {}".format(sampler_name))
+        raise ValueError(f"Unknown training sampler: {sampler_name}")
 
     if cfg.DATALOADER.ASPECT_RATIO_GROUPING:
         data_loader = torch.utils.data.DataLoader(
@@ -374,13 +367,12 @@ def build_detection_test_loader(cfg, dataset_name, mapper=None):
     # standard when reporting inference time in papers.
     batch_sampler = torch.utils.data.sampler.BatchSampler(sampler, 1, drop_last=False)
 
-    data_loader = torch.utils.data.DataLoader(
+    return torch.utils.data.DataLoader(
         dataset,
         num_workers=cfg.DATALOADER.NUM_WORKERS,
         batch_sampler=batch_sampler,
         collate_fn=trivial_batch_collator,
     )
-    return data_loader
 
 
 def trivial_batch_collator(batch):

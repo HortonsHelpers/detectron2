@@ -75,8 +75,7 @@ class DensePoseROIHeads(StandardROIHeads):
                 features_dp = self.densepose_pooler(features, proposal_boxes)
                 densepose_head_outputs = self.densepose_head(features_dp)
                 densepose_outputs, _ = self.densepose_predictor(densepose_head_outputs)
-                densepose_loss_dict = self.densepose_losses(proposals_dp, densepose_outputs)
-                return densepose_loss_dict
+                return self.densepose_losses(proposals_dp, densepose_outputs)
         else:
             pred_boxes = [x.pred_boxes for x in instances]
             features_dp = self.densepose_pooler(features, pred_boxes)

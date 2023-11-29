@@ -6,13 +6,12 @@ from detectron2.data.datasets import load_coco_json
 
 
 def get_densepose_metadata():
-    meta = {
+    return {
         "thing_classes": ["person"],
         "densepose_transform_src": "detectron2://densepose/UV_symmetry_transforms.mat",
         "densepose_smpl_subdiv": "detectron2://densepose/SMPL_subdiv.mat",
         "densepose_smpl_subdiv_transform": "detectron2://densepose/SMPL_SUBDIV_TRANSFORM.mat",
     }
-    return meta
 
 
 SPLITS = {

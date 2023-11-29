@@ -113,11 +113,7 @@ napoleon_use_rtype = False
 autodoc_inherit_docstrings = False
 autodoc_member_order = "bysource"
 
-if DEPLOY:
-    intersphinx_timeout = 10
-else:
-    # skip this when building locally
-    intersphinx_timeout = 0.1
+intersphinx_timeout = 10 if DEPLOY else 0.1
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3.6", None),
     "numpy": ("https://docs.scipy.org/doc/numpy/", None),
@@ -241,7 +237,11 @@ texinfo_documents = [
 todo_include_todos = True
 
 
-_DEPRECATED_NAMES = set(["out_feature_channels", "out_feature_strides", "out_features"])
+_DEPRECATED_NAMES = {
+    "out_feature_channels",
+    "out_feature_strides",
+    "out_features",
+}
 
 
 def autodoc_skip_member(app, what, name, obj, skip, options):
@@ -249,20 +249,14 @@ def autodoc_skip_member(app, what, name, obj, skip, options):
     if getattr(obj, "__HIDE_SPHINX_DOC__", False):
         return True
     # Hide some names that are deprecated or not intended to be used
-    if name in _DEPRECATED_NAMES:
-        return True
-    return None
+    return True if name in _DEPRECATED_NAMES else None
 
 
 def url_resolver(url):
-    if ".html" not in url:
-        url = url.replace("../", "")
-        return "https://github.com/facebookresearch/detectron2/blob/master/" + url
-    else:
-        if DEPLOY:
-            return "http://detectron2.readthedocs.io/" + url
-        else:
-            return "/" + url
+    if ".html" in url:
+        return f"http://detectron2.readthedocs.io/{url}" if DEPLOY else f"/{url}"
+    url = url.replace("../", "")
+    return f"https://github.com/facebookresearch/detectron2/blob/master/{url}"
 
 
 def setup(app):

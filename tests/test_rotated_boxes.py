@@ -244,8 +244,8 @@ class TestRotatedBoxesLayer(unittest.TestCase):
 
 class TestRotatedBoxesStructure(unittest.TestCase):
     def test_clip_area_0_degree(self):
+        num_boxes = 100
         for _ in range(50):
-            num_boxes = 100
             boxes_5d = torch.zeros(num_boxes, 5)
             boxes_5d[:, 0] = torch.FloatTensor(num_boxes).uniform_(-100, 500)
             boxes_5d[:, 1] = torch.FloatTensor(num_boxes).uniform_(-100, 500)
@@ -301,9 +301,9 @@ class TestRotatedBoxesStructure(unittest.TestCase):
         )
 
     def test_normalize_angles(self):
+        num_boxes = 100
         # torch.manual_seed(0)
         for _ in range(50):
-            num_boxes = 100
             boxes_5d = torch.zeros(num_boxes, 5)
             boxes_5d[:, 0] = torch.FloatTensor(num_boxes).uniform_(-100, 500)
             boxes_5d[:, 1] = torch.FloatTensor(num_boxes).uniform_(-100, 500)

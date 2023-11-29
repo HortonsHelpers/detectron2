@@ -150,14 +150,12 @@ class COCOEvaluator(DatasetEvaluator):
                 category_id = result["category_id"]
                 assert (
                     category_id in reverse_id_mapping
-                ), "A prediction has category_id={}, which is not available in the dataset.".format(
-                    category_id
-                )
+                ), f"A prediction has category_id={category_id}, which is not available in the dataset."
                 result["category_id"] = reverse_id_mapping[category_id]
 
         if self._output_dir:
             file_path = os.path.join(self._output_dir, "coco_instances_results.json")
-            self._logger.info("Saving results to {}".format(file_path))
+            self._logger.info(f"Saving results to {file_path}")
             with PathManager.open(file_path, "w") as f:
                 f.write(json.dumps(self._coco_results))
                 f.flush()
@@ -170,10 +168,13 @@ class COCOEvaluator(DatasetEvaluator):
         for task in sorted(tasks):
             coco_eval = (
                 _evaluate_predictions_on_coco(
-                    self._coco_api, self._coco_results, task, kpt_oks_sigmas=self._kpt_oks_sigmas
+                    self._coco_api,
+                    self._coco_results,
+                    task,
+                    kpt_oks_sigmas=self._kpt_oks_sigmas,
                 )
-                if len(self._coco_results) > 0
-                else None  # cocoapi does not handle empty results very well
+                if self._coco_results
+                else None
             )
 
             res = self._derive_coco_results(
@@ -249,7 +250,7 @@ class COCOEvaluator(DatasetEvaluator):
         # the standard metrics
         results = {metric: float(coco_eval.stats[idx] * 100) for idx, metric in enumerate(metrics)}
         self._logger.info(
-            "Evaluation results for {}: \n".format(iou_type) + create_small_table(results)
+            f"Evaluation results for {iou_type}: \n{create_small_table(results)}"
         )
 
         if class_names is None or len(class_names) <= 1:
@@ -267,7 +268,7 @@ class COCOEvaluator(DatasetEvaluator):
             precision = precisions[:, :, idx, 0, -1]
             precision = precision[precision > -1]
             ap = np.mean(precision) if precision.size else float("nan")
-            results_per_category.append(("{}".format(name), float(ap * 100)))
+            results_per_category.append((f"{name}", float(ap * 100)))
 
         # tabulate it
         N_COLS = min(6, len(results_per_category) * 2)
@@ -280,9 +281,9 @@ class COCOEvaluator(DatasetEvaluator):
             headers=["category", "AP"] * (N_COLS // 2),
             numalign="left",
         )
-        self._logger.info("Per-category {} AP: \n".format(iou_type) + table)
+        self._logger.info(f"Per-category {iou_type} AP: \n{table}")
 
-        results.update({"AP-" + name: ap for name, ap in results_per_category})
+        results.update({f"AP-{name}": ap for name, ap in results_per_category})
         return results
 
 
@@ -378,7 +379,7 @@ def _evaluate_box_proposals(dataset_predictions, coco_api, thresholds=None, area
         [256 ** 2, 512 ** 2],  # 256-512
         [512 ** 2, 1e5 ** 2],
     ]  # 512-inf
-    assert area in areas, "Unknown area range: {}".format(area)
+    assert area in areas, f"Unknown area range: {area}"
     area_range = area_ranges[areas[area]]
     gt_overlaps = []
     num_pos = 0
@@ -482,12 +483,9 @@ def _evaluate_predictions_on_coco(coco_gt, coco_results, iou_type, kpt_oks_sigma
 
     if iou_type == "keypoints":
         num_keypoints = len(coco_results[0]["keypoints"]) // 3
-        assert len(coco_eval.params.kpt_oks_sigmas) == num_keypoints, (
-            "[COCOEvaluator] The length of cfg.TEST.KEYPOINT_OKS_SIGMAS (default: 17) "
-            "must be equal to the number of keypoints. However the prediction has {} "
-            "keypoints! For more information please refer to "
-            "http://cocodataset.org/#keypoints-eval.".format(num_keypoints)
-        )
+        assert (
+            len(coco_eval.params.kpt_oks_sigmas) == num_keypoints
+        ), f"[COCOEvaluator] The length of cfg.TEST.KEYPOINT_OKS_SIGMAS (default: 17) must be equal to the number of keypoints. However the prediction has {num_keypoints} keypoints! For more information please refer to http://cocodataset.org/#keypoints-eval."
 
     coco_eval.evaluate()
     coco_eval.accumulate()

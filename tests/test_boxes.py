@@ -64,7 +64,7 @@ class TestBoxMode(unittest.TestCase):
             output = self._convert_xywha_to_xyxy(box)
             self.assertEqual(output.dtype, box.dtype)
             expected = np.asarray([[35, 40, 65, 60], [40, 35, 60, 65], [0, 0, 2, 2]], dtype=dtype)
-            self.assertTrue(np.allclose(output, expected, atol=1e-6), "output={}".format(output))
+            self.assertTrue(np.allclose(output, expected, atol=1e-6), f"output={output}")
 
     def test_box_convert_xywha_to_xyxy_tensor(self):
         for dtype in [torch.float32, torch.float64]:
@@ -80,7 +80,9 @@ class TestBoxMode(unittest.TestCase):
             self.assertEqual(output.dtype, box.dtype)
             expected = torch.tensor([[35, 40, 65, 60], [40, 35, 60, 65], [0, 0, 2, 2]], dtype=dtype)
 
-            self.assertTrue(torch.allclose(output, expected, atol=1e-6), "output={}".format(output))
+            self.assertTrue(
+                torch.allclose(output, expected, atol=1e-6), f"output={output}"
+            )
 
 
 class TestBoxIOU(unittest.TestCase):

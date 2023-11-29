@@ -379,15 +379,30 @@ class RetinaNetHead(nn.Module):
         cls_subnet = []
         bbox_subnet = []
         for _ in range(num_convs):
-            cls_subnet.append(
-                nn.Conv2d(in_channels, in_channels, kernel_size=3, stride=1, padding=1)
+            cls_subnet.extend(
+                (
+                    nn.Conv2d(
+                        in_channels,
+                        in_channels,
+                        kernel_size=3,
+                        stride=1,
+                        padding=1,
+                    ),
+                    nn.ReLU(),
+                )
             )
-            cls_subnet.append(nn.ReLU())
-            bbox_subnet.append(
-                nn.Conv2d(in_channels, in_channels, kernel_size=3, stride=1, padding=1)
+            bbox_subnet.extend(
+                (
+                    nn.Conv2d(
+                        in_channels,
+                        in_channels,
+                        kernel_size=3,
+                        stride=1,
+                        padding=1,
+                    ),
+                    nn.ReLU(),
+                )
             )
-            bbox_subnet.append(nn.ReLU())
-
         self.cls_subnet = nn.Sequential(*cls_subnet)
         self.bbox_subnet = nn.Sequential(*bbox_subnet)
         self.cls_score = nn.Conv2d(

@@ -56,11 +56,9 @@ def benchmark_data(args):
     for _ in tqdm.trange(max_iter):
         next(itr)
     logger.info(
-        "{} iters ({} images) in {} seconds.".format(
-            max_iter, max_iter * cfg.SOLVER.IMS_PER_BATCH, timer.seconds()
-        )
+        f"{max_iter} iters ({max_iter * cfg.SOLVER.IMS_PER_BATCH} images) in {timer.seconds()} seconds."
     )
-    logger.info("Startup time: {} seconds".format(startup_time))
+    logger.info(f"Startup time: {startup_time} seconds")
     vram = psutil.virtual_memory()
     logger.info(
         "RAM Usage: {:.2f}/{:.2f} GB".format(

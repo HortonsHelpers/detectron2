@@ -144,11 +144,7 @@ class BottleneckBlock(ResNetBlockBase):
 
         out = self.conv3(out)
 
-        if self.shortcut is not None:
-            shortcut = self.shortcut(x)
-        else:
-            shortcut = x
-
+        shortcut = self.shortcut(x) if self.shortcut is not None else x
         out += shortcut
         out = F.relu_(out)
         return out
@@ -259,11 +255,7 @@ class DeformBottleneckBlock(ResNetBlockBase):
 
         out = self.conv3(out)
 
-        if self.shortcut is not None:
-            shortcut = self.shortcut(x)
-        else:
-            shortcut = x
-
+        shortcut = self.shortcut(x) if self.shortcut is not None else x
         out += shortcut
         out = F.relu_(out)
         return out
@@ -350,7 +342,7 @@ class ResNet(Backbone):
                 assert isinstance(block, ResNetBlockBase), block
                 curr_channels = block.out_channels
             stage = nn.Sequential(*blocks)
-            name = "res" + str(i + 2)
+            name = f"res{str(i + 2)}"
             self.add_module(name, stage)
             self.stages_and_names.append((stage, name))
             self._out_feature_strides[name] = current_stride = int(
@@ -374,7 +366,7 @@ class ResNet(Backbone):
         assert len(self._out_features)
         children = [x[0] for x in self.named_children()]
         for out_feature in self._out_features:
-            assert out_feature in children, "Available children: {}".format(", ".join(children))
+            assert out_feature in children, f'Available children: {", ".join(children)}'
 
     def forward(self, x):
         outputs = {}
@@ -437,7 +429,7 @@ def build_resnet_backbone(cfg, input_shape):
     deform_modulated    = cfg.MODEL.RESNETS.DEFORM_MODULATED
     deform_num_groups   = cfg.MODEL.RESNETS.DEFORM_NUM_GROUPS
     # fmt: on
-    assert res5_dilation in {1, 2}, "res5_dilation cannot be {}.".format(res5_dilation)
+    assert res5_dilation in {1, 2}, f"res5_dilation cannot be {res5_dilation}."
 
     num_blocks_per_stage = {50: [3, 4, 6, 3], 101: [3, 4, 23, 3], 152: [3, 8, 36, 3]}[depth]
 

@@ -27,10 +27,10 @@ def get_version():
         from datetime import datetime
 
         date_str = datetime.today().strftime("%y%m%d")
-        version = version + ".dev" + date_str
+        version = f"{version}.dev{date_str}"
 
         new_init_py = [l for l in init_py if not l.startswith("__version__")]
-        new_init_py.append('__version__ = "{}"\n'.format(version))
+        new_init_py.append(f'__version__ = "{version}"\n')
         with open(init_py_path, "w") as f:
             f.write("".join(new_init_py))
     return version
@@ -66,11 +66,11 @@ def get_extensions():
         # It's better if pytorch can do this by default ..
         CC = os.environ.get("CC", None)
         if CC is not None:
-            extra_compile_args["nvcc"].append("-ccbin={}".format(CC))
+            extra_compile_args["nvcc"].append(f"-ccbin={CC}")
 
     include_dirs = [extensions_dir]
 
-    ext_modules = [
+    return [
         extension(
             "detectron2._C",
             sources,
@@ -79,8 +79,6 @@ def get_extensions():
             extra_compile_args=extra_compile_args,
         )
     ]
-
-    return ext_modules
 
 
 def get_model_zoo_configs() -> List[str]:
@@ -108,8 +106,7 @@ def get_model_zoo_configs() -> List[str]:
         # Fall back to copying if symlink fails: ex. on Windows.
         shutil.copytree(source_configs_dir, destination)
 
-    config_paths = glob.glob("configs/**/*.yaml", recursive=True)
-    return config_paths
+    return glob.glob("configs/**/*.yaml", recursive=True)
 
 
 setup(

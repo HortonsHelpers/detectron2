@@ -63,7 +63,7 @@ def keypoint_rcnn_loss(pred_keypoint_logits, instances, normalizer):
 
     # torch.mean (in binary_cross_entropy_with_logits) doesn't
     # accept empty tensors, so handle it separately
-    if len(heatmaps) == 0 or valid.numel() == 0:
+    if not heatmaps or valid.numel() == 0:
         global _TOTAL_SKIPPED
         _TOTAL_SKIPPED += 1
         storage = get_event_storage()
@@ -142,7 +142,7 @@ class KRCNNConvDeconvUpsampleHead(nn.Module):
         self.blocks = []
         for idx, layer_channels in enumerate(conv_dims, 1):
             module = Conv2d(in_channels, layer_channels, 3, stride=1, padding=1)
-            self.add_module("conv_fcn{}".format(idx), module)
+            self.add_module(f"conv_fcn{idx}", module)
             self.blocks.append(module)
             in_channels = layer_channels
 

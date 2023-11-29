@@ -82,7 +82,7 @@ class GenericMask:
             self._mask = m.astype("uint8")
             return
 
-        raise ValueError("GenericMask cannot handle object {} of type '{}'".format(m, type(m)))
+        raise ValueError(f"GenericMask cannot handle object {m} of type '{type(m)}'")
 
     @property
     def mask(self):
@@ -157,11 +157,8 @@ class _PanopticPrediction:
         Returns:
             (H, W) array, a mask for all pixels that have a prediction
         """
-        empty_ids = []
-        for id in self._seg_ids:
-            if id not in self._sinfo:
-                empty_ids.append(id)
-        if len(empty_ids) == 0:
+        empty_ids = [id for id in self._seg_ids if id not in self._sinfo]
+        if not empty_ids:
             return np.zeros(self._seg.shape, dtype=np.uint8)
         assert (
             len(empty_ids) == 1
@@ -445,7 +442,7 @@ class Visualizer:
 
         # draw mask for all instances second
         all_instances = list(pred.instance_masks())
-        if len(all_instances) == 0:
+        if not all_instances:
             return self.output
         masks, sinfo = list(zip(*all_instances))
         category_ids = [x["category_id"] for x in sinfo]
@@ -457,7 +454,7 @@ class Visualizer:
         labels = _create_text_labels(category_ids, scores, self.metadata.thing_classes)
 
         try:
-            colors = [random_color(rgb=True, maximum=1) for k in category_ids]
+            colors = [random_color(rgb=True, maximum=1) for _ in category_ids]
         except AttributeError:
             colors = None
         self.overlay_instances(masks=masks, labels=labels, assigned_colors=colors, alpha=alpha)
@@ -474,8 +471,7 @@ class Visualizer:
         Returns:
             output (VisImage): image object with visualizations.
         """
-        annos = dic.get("annotations", None)
-        if annos:
+        if annos := dic.get("annotations", None):
             if "segmentation" in annos[0]:
                 masks = [x["segmentation"] for x in annos]
             else:
@@ -489,11 +485,10 @@ class Visualizer:
             boxes = [BoxMode.convert(x["bbox"], x["bbox_mode"], BoxMode.XYXY_ABS) for x in annos]
 
             labels = [x["category_id"] for x in annos]
-            names = self.metadata.get("thing_classes", None)
-            if names:
+            if names := self.metadata.get("thing_classes", None):
                 labels = [names[i] for i in labels]
             labels = [
-                "{}".format(i) + ("|crowd" if a.get("iscrowd", 0) else "")
+                f"{i}" + ("|crowd" if a.get("iscrowd", 0) else "")
                 for i, a in zip(labels, annos)
             ]
             self.overlay_instances(labels=labels, boxes=boxes, masks=masks, keypoints=keypts)
@@ -616,11 +611,7 @@ class Visualizer:
                     instance_area < _SMALL_OBJECT_AREA_THRESH * self.output.scale
                     or y1 - y0 < 40 * self.output.scale
                 ):
-                    if y1 >= self.output.height - 5:
-                        text_pos = (x1, y0)
-                    else:
-                        text_pos = (x0, y1)
-
+                    text_pos = (x1, y0) if y1 >= self.output.height - 5 else (x0, y1)
                 height_ratio = (y1 - y0) / np.sqrt(self.output.height * self.output.width)
                 lighter_color = self._change_color_brightness(color, brightness_factor=0.7)
                 font_size = (
@@ -1073,16 +1064,17 @@ class Visualizer:
         color = mplc.to_rgb(color)
         polygon_color = colorsys.rgb_to_hls(*mplc.to_rgb(color))
         modified_lightness = polygon_color[1] + (brightness_factor * polygon_color[1])
-        modified_lightness = 0.0 if modified_lightness < 0.0 else modified_lightness
-        modified_lightness = 1.0 if modified_lightness > 1.0 else modified_lightness
-        modified_color = colorsys.hls_to_rgb(polygon_color[0], modified_lightness, polygon_color[2])
-        return modified_color
+        modified_lightness = max(modified_lightness, 0.0)
+        modified_lightness = min(modified_lightness, 1.0)
+        return colorsys.hls_to_rgb(
+            polygon_color[0], modified_lightness, polygon_color[2]
+        )
 
     def _convert_boxes(self, boxes):
         """
         Convert different format of boxes to an NxB array, where B = 4 or 5 is the box dimension.
         """
-        if isinstance(boxes, Boxes) or isinstance(boxes, RotatedBoxes):
+        if isinstance(boxes, (Boxes, RotatedBoxes)):
             return boxes.tensor.numpy()
         else:
             return np.asarray(boxes)

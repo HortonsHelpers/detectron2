@@ -23,10 +23,9 @@ class ScoredBoundingBoxVisualizer(object):
 
     def visualize(self, image_bgr, scored_bboxes):
         boxes_xywh, box_scores = scored_bboxes
-        assert len(boxes_xywh) == len(box_scores), (
-            "Number of bounding boxes {} should be equal to the number of "
-            "scores".format(len(boxes_xywh), len(box_scores))
-        )
+        assert len(boxes_xywh) == len(
+            box_scores
+        ), f"Number of bounding boxes {len(boxes_xywh)} should be equal to the number of scores"
         for i, box_xywh in enumerate(boxes_xywh):
             score_i = box_scores[i]
             image_bgr = self.visualizer_bbox.visualize(image_bgr, box_xywh)

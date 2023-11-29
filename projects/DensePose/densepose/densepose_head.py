@@ -50,8 +50,7 @@ class DensePoseV1ConvXHead(nn.Module):
         return output
 
     def _get_layer_name(self, i):
-        layer_name = "body_conv_fcn{}".format(i + 1)
-        return layer_name
+        return f"body_conv_fcn{i + 1}"
 
 
 class DensePosePredictor(nn.Module):
@@ -143,13 +142,11 @@ def build_densepose_head(cfg, input_channels):
 
 
 def build_densepose_predictor(cfg, input_channels):
-    predictor = DensePosePredictor(cfg, input_channels)
-    return predictor
+    return DensePosePredictor(cfg, input_channels)
 
 
 def build_densepose_data_filter(cfg):
-    dp_filter = DensePoseDataFilter(cfg)
-    return dp_filter
+    return DensePoseDataFilter(cfg)
 
 
 def densepose_inference(densepose_outputs, detections):
@@ -321,13 +318,12 @@ def _extract_at_points_packed(
     w_ylo_xlo, w_ylo_xhi, w_yhi_xlo and w_yhi_xhi.
     Use slice_index_uv to slice dim=1 in z_est
     """
-    z_est_sampled = (
+    return (
         z_est[index_bbox_valid, slice_index_uv, y_lo, x_lo] * w_ylo_xlo
         + z_est[index_bbox_valid, slice_index_uv, y_lo, x_hi] * w_ylo_xhi
         + z_est[index_bbox_valid, slice_index_uv, y_hi, x_lo] * w_yhi_xlo
         + z_est[index_bbox_valid, slice_index_uv, y_hi, x_hi] * w_yhi_xhi
     )
-    return z_est_sampled
 
 
 def _resample_data(
@@ -346,11 +342,9 @@ def _resample_data(
             with resampled values of z, where D is the discretization size
     """
     n = bbox_xywh_src.size(0)
-    assert n == bbox_xywh_dst.size(0), (
-        "The number of "
-        "source ROIs for resampling ({}) should be equal to the number "
-        "of destination ROIs ({})".format(bbox_xywh_src.size(0), bbox_xywh_dst.size(0))
-    )
+    assert n == bbox_xywh_dst.size(
+        0
+    ), f"The number of source ROIs for resampling ({bbox_xywh_src.size(0)}) should be equal to the number of destination ROIs ({bbox_xywh_dst.size(0)})"
     x0src, y0src, wsrc, hsrc = bbox_xywh_src.unbind(dim=1)
     x0dst, y0dst, wdst, hdst = bbox_xywh_dst.unbind(dim=1)
     x0dst_norm = 2 * (x0dst - x0src) / wsrc - 1
@@ -368,9 +362,9 @@ def _resample_data(
     grid_x = grid_w_expanded * dx_expanded + x0_expanded
     grid_y = grid_h_expanded * dy_expanded + y0_expanded
     grid = torch.stack((grid_x, grid_y), dim=3)
-    # resample Z from (N, C, H, W) into (N, C, Hout, Wout)
-    zresampled = F.grid_sample(z, grid, mode=mode, padding_mode=padding_mode, align_corners=True)
-    return zresampled
+    return F.grid_sample(
+        z, grid, mode=mode, padding_mode=padding_mode, align_corners=True
+    )
 
 
 def _extract_single_tensors_from_matches_one_image(
@@ -466,7 +460,7 @@ def _extract_single_tensors_from_matches(proposals_with_targets):
         i_img.extend([i] * len(i_with_dp_img))
         n += n_i
     # concatenate all data into a single tensor
-    if (n > 0) and (len(i_with_dp_all) > 0):
+    if n > 0 and i_with_dp_all:
         i_gt = torch.cat(i_gt_all, 0).long()
         x_norm = torch.cat(x_norm_all, 0)
         y_norm = torch.cat(y_norm_all, 0)
@@ -622,5 +616,4 @@ class DensePoseLosses(object):
 
 
 def build_densepose_losses(cfg):
-    losses = DensePoseLosses(cfg)
-    return losses
+    return DensePoseLosses(cfg)

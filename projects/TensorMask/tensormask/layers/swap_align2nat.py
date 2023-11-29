@@ -12,8 +12,7 @@ class _SwapAlign2Nat(Function):
         ctx.lambda_val = lambda_val
         ctx.input_shape = X.size()
 
-        Y = _C.swap_align2nat_forward(X, lambda_val, pad_val)
-        return Y
+        return _C.swap_align2nat_forward(X, lambda_val, pad_val)
 
     @staticmethod
     @once_differentiable
@@ -54,8 +53,8 @@ class SwapAlign2Nat(nn.Module):
         return swap_align2nat(X, self.lambda_val, self.pad_val)
 
     def __repr__(self):
-        tmpstr = self.__class__.__name__ + "("
-        tmpstr += "lambda_val=" + str(self.lambda_val)
-        tmpstr += ", pad_val=" + str(self.pad_val)
+        tmpstr = f"{self.__class__.__name__}("
+        tmpstr += f"lambda_val={str(self.lambda_val)}"
+        tmpstr += f", pad_val={str(self.pad_val)}"
         tmpstr += ")"
         return tmpstr

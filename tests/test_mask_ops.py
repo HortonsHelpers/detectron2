@@ -60,7 +60,7 @@ class TestMaskCropPaste(unittest.TestCase):
     def setUp(self):
         json_file = MetadataCatalog.get("coco_2017_val_100").json_file
         if not os.path.isfile(json_file):
-            raise unittest.SkipTest("{} not found".format(json_file))
+            raise unittest.SkipTest(f"{json_file} not found")
         with contextlib.redirect_stdout(io.StringIO()):
             self.coco = COCO(json_file)
 

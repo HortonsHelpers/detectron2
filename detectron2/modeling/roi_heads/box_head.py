@@ -54,14 +54,14 @@ class FastRCNNConvFCHead(nn.Module):
                 norm=get_norm(norm, conv_dim),
                 activation=F.relu,
             )
-            self.add_module("conv{}".format(k + 1), conv)
+            self.add_module(f"conv{k + 1}", conv)
             self.conv_norm_relus.append(conv)
             self._output_size = (conv_dim, self._output_size[1], self._output_size[2])
 
         self.fcs = []
         for k in range(num_fc):
             fc = nn.Linear(np.prod(self._output_size), fc_dim)
-            self.add_module("fc{}".format(k + 1), fc)
+            self.add_module(f"fc{k + 1}", fc)
             self.fcs.append(fc)
             self._output_size = fc_dim
 

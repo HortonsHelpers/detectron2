@@ -24,10 +24,7 @@ def get_model_zoo(config_path):
 
 
 def create_model_input(img, inst=None):
-    if inst is not None:
-        return {"image": img, "instances": inst}
-    else:
-        return {"image": img}
+    return {"image": img} if inst is None else {"image": img, "instances": inst}
 
 
 def get_empty_instance(h, w):

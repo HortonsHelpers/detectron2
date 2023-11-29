@@ -35,9 +35,9 @@ class DatasetCatalog(object):
             func (callable): a callable which takes no arguments and returns a list of dicts.
         """
         assert callable(func), "You must register a function with `DatasetCatalog.register`!"
-        assert name not in DatasetCatalog._REGISTERED, "Dataset '{}' is already registered!".format(
-            name
-        )
+        assert (
+            name not in DatasetCatalog._REGISTERED
+        ), f"Dataset '{name}' is already registered!"
         DatasetCatalog._REGISTERED[name] = func
 
     @staticmethod
@@ -55,9 +55,7 @@ class DatasetCatalog(object):
             f = DatasetCatalog._REGISTERED[name]
         except KeyError:
             raise KeyError(
-                "Dataset '{}' is not registered! Available datasets are: {}".format(
-                    name, ", ".join(DatasetCatalog._REGISTERED.keys())
-                )
+                f"""Dataset '{name}' is not registered! Available datasets are: {", ".join(DatasetCatalog._REGISTERED.keys())}"""
             )
         return f()
 
@@ -109,22 +107,20 @@ class Metadata(types.SimpleNamespace):
         if key in self._RENAMED:
             log_first_n(
                 logging.WARNING,
-                "Metadata '{}' was renamed to '{}'!".format(key, self._RENAMED[key]),
+                f"Metadata '{key}' was renamed to '{self._RENAMED[key]}'!",
                 n=10,
             )
             return getattr(self, self._RENAMED[key])
 
         raise AttributeError(
-            "Attribute '{}' does not exist in the metadata of '{}'. Available keys are {}.".format(
-                key, self.name, str(self.__dict__.keys())
-            )
+            f"Attribute '{key}' does not exist in the metadata of '{self.name}'. Available keys are {str(self.__dict__.keys())}."
         )
 
     def __setattr__(self, key, val):
         if key in self._RENAMED:
             log_first_n(
                 logging.WARNING,
-                "Metadata '{}' was renamed to '{}'!".format(key, self._RENAMED[key]),
+                f"Metadata '{key}' was renamed to '{self._RENAMED[key]}'!",
                 n=10,
             )
             setattr(self, self._RENAMED[key], val)
@@ -132,10 +128,9 @@ class Metadata(types.SimpleNamespace):
         # Ensure that metadata of the same name stays consistent
         try:
             oldval = getattr(self, key)
-            assert oldval == val, (
-                "Attribute '{}' in the metadata of '{}' cannot be set "
-                "to a different value!\n{} != {}".format(key, self.name, oldval, val)
-            )
+            assert (
+                oldval == val
+            ), f"Attribute '{key}' in the metadata of '{self.name}' cannot be set to a different value!\n{oldval} != {val}"
         except AttributeError:
             super().__setattr__(key, val)
 

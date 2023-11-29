@@ -291,8 +291,7 @@ class RROIHeads(StandardROIHeads):
         )
         if self.training:
             return outputs.losses()
-        else:
-            pred_instances, _ = outputs.inference(
-                self.test_score_thresh, self.test_nms_thresh, self.test_detections_per_img
-            )
-            return pred_instances
+        pred_instances, _ = outputs.inference(
+            self.test_score_thresh, self.test_nms_thresh, self.test_detections_per_img
+        )
+        return pred_instances

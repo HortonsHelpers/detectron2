@@ -27,7 +27,7 @@ def polygons_to_bitmask(polygons: List[np.ndarray], height: int, width: int) -> 
     Returns:
         ndarray: a bool mask of shape (height, width)
     """
-    assert len(polygons) > 0, "COCOAPI does not support empty polygons"
+    assert polygons, "COCOAPI does not support empty polygons"
     rles = mask_utils.frPyObjects(polygons, height, width)
     rle = mask_utils.merge(rles)
     return mask_utils.decode(rle).astype(np.bool)
@@ -60,7 +60,7 @@ def rasterize_polygons_within_box(
 
     polygons = copy.deepcopy(polygons)
     for p in polygons:
-        p[0::2] = p[0::2] - box[0]
+        p[::2] = p[::2] - box[0]
         p[1::2] = p[1::2] - box[1]
 
     # 2. Rescale the polygons to the new box size
@@ -72,7 +72,7 @@ def rasterize_polygons_within_box(
             p *= ratio_h
     else:
         for p in polygons:
-            p[0::2] *= ratio_w
+            p[::2] *= ratio_w
             p[1::2] *= ratio_h
 
     # 3. Rasterize the polygons with coco api
@@ -126,17 +126,17 @@ class BitMasks:
         if isinstance(item, int):
             return BitMasks(self.tensor[item].view(1, -1))
         m = self.tensor[item]
-        assert m.dim() == 3, "Indexing on BitMasks with {} returns a tensor with shape {}!".format(
-            item, m.shape
-        )
+        assert (
+            m.dim() == 3
+        ), f"Indexing on BitMasks with {item} returns a tensor with shape {m.shape}!"
         return BitMasks(m)
 
     def __iter__(self) -> torch.Tensor:
         yield from self.tensor
 
     def __repr__(self) -> str:
-        s = self.__class__.__name__ + "("
-        s += "num_instances={})".format(len(self.tensor))
+        s = f"{self.__class__.__name__}("
+        s += f"num_instances={len(self.tensor)})"
         return s
 
     def __len__(self) -> int:
@@ -183,7 +183,7 @@ class BitMasks:
                 A bool tensor of shape (N, mask_size, mask_size), where
                 N is the number of predicted boxes for this image.
         """
-        assert len(boxes) == len(self), "{} != {}".format(len(boxes), len(self))
+        assert len(boxes) == len(self), f"{len(boxes)} != {len(self)}"
         device = self.tensor.device
 
         batch_inds = torch.arange(len(boxes), device=device).to(dtype=boxes.dtype)[:, None]
@@ -215,11 +215,10 @@ class BitMasks:
             BitMasks: the concatenated BitMasks
         """
         assert isinstance(bitmasks_list, (list, tuple))
-        assert len(bitmasks_list) > 0
+        assert bitmasks_list
         assert all(isinstance(bitmask, BitMasks) for bitmask in bitmasks_list)
 
-        cat_bitmasks = type(bitmasks_list[0])(cat([bm.tensor for bm in bitmasks_list], dim=0))
-        return cat_bitmasks
+        return type(bitmasks_list[0])(cat([bm.tensor for bm in bitmasks_list], dim=0))
 
 
 class PolygonMasks:
@@ -332,7 +331,7 @@ class PolygonMasks:
             elif item.dtype in [torch.int32, torch.int64]:
                 item = item.cpu().numpy().tolist()
             else:
-                raise ValueError("Unsupported tensor dtype={} for indexing!".format(item.dtype))
+                raise ValueError(f"Unsupported tensor dtype={item.dtype} for indexing!")
             selected_polygons = [self.polygons[i] for i in item]
         return PolygonMasks(selected_polygons)
 
@@ -345,8 +344,8 @@ class PolygonMasks:
         return iter(self.polygons)
 
     def __repr__(self) -> str:
-        s = self.__class__.__name__ + "("
-        s += "num_instances={})".format(len(self.polygons))
+        s = f"{self.__class__.__name__}("
+        s += f"num_instances={len(self.polygons)})"
         return s
 
     def __len__(self) -> int:
@@ -365,7 +364,7 @@ class PolygonMasks:
             Tensor: A bool tensor of shape (N, mask_size, mask_size), where
             N is the number of predicted boxes for this image.
         """
-        assert len(boxes) == len(self), "{} != {}".format(len(boxes), len(self))
+        assert len(boxes) == len(self), f"{len(boxes)} != {len(self)}"
 
         device = boxes.device
         # Put boxes on the CPU, as the polygon representation is not efficient GPU-wise
@@ -380,7 +379,7 @@ class PolygonMasks:
         poly: list[list[float]], the polygons for one instance
         box: a tensor of shape (4,)
         """
-        if len(results) == 0:
+        if not results:
             return torch.empty(0, mask_size, mask_size, dtype=torch.bool, device=device)
         return torch.stack(results, dim=0).to(device=device)
 
@@ -396,9 +395,9 @@ class PolygonMasks:
 
         area = []
         for polygons_per_instance in self.polygons:
-            area_per_instance = 0
-            for p in polygons_per_instance:
-                area_per_instance += polygon_area(p[0::2], p[1::2])
+            area_per_instance = sum(
+                polygon_area(p[::2], p[1::2]) for p in polygons_per_instance
+            )
             area.append(area_per_instance)
 
         return torch.tensor(area)
@@ -415,10 +414,11 @@ class PolygonMasks:
             PolygonMasks: the concatenated PolygonMasks
         """
         assert isinstance(polymasks_list, (list, tuple))
-        assert len(polymasks_list) > 0
+        assert polymasks_list
         assert all(isinstance(polymask, PolygonMasks) for polymask in polymasks_list)
 
-        cat_polymasks = type(polymasks_list[0])(
-            list(itertools.chain.from_iterable(pm.polygons for pm in polymasks_list))
+        return type(polymasks_list[0])(
+            list(
+                itertools.chain.from_iterable(pm.polygons for pm in polymasks_list)
+            )
         )
-        return cat_polymasks

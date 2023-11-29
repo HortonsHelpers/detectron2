@@ -115,9 +115,9 @@ class CascadeROIHeads(StandardROIHeads):
             losses = {}
             storage = get_event_storage()
             for stage, output in enumerate(head_outputs):
-                with storage.name_scope("stage{}".format(stage)):
+                with storage.name_scope(f"stage{stage}"):
                     stage_losses = output.losses()
-                losses.update({k + "_stage{}".format(stage): v for k, v in stage_losses.items()})
+                losses.update({f"{k}_stage{stage}": v for k, v in stage_losses.items()})
             return losses
         else:
             # Each is a list[Tensor] of length #image. Each tensor is Ri x (K+1)
@@ -181,11 +181,11 @@ class CascadeROIHeads(StandardROIHeads):
         # Log the number of fg/bg samples in each stage
         storage = get_event_storage()
         storage.put_scalar(
-            "stage{}/roi_head/num_fg_samples".format(stage),
+            f"stage{stage}/roi_head/num_fg_samples",
             sum(num_fg_samples) / len(num_fg_samples),
         )
         storage.put_scalar(
-            "stage{}/roi_head/num_bg_samples".format(stage),
+            f"stage{stage}/roi_head/num_bg_samples",
             sum(num_bg_samples) / len(num_bg_samples),
         )
         return proposals
@@ -210,14 +210,13 @@ class CascadeROIHeads(StandardROIHeads):
         pred_class_logits, pred_proposal_deltas = self.box_predictor[stage](box_features)
         del box_features
 
-        outputs = FastRCNNOutputs(
+        return FastRCNNOutputs(
             self.box2box_transform[stage],
             pred_class_logits,
             pred_proposal_deltas,
             proposals,
             self.smooth_l1_beta,
         )
-        return outputs
 
     def _create_proposals_from_boxes(self, boxes, image_sizes):
         """

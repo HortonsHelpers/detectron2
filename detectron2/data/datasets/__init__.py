@@ -6,4 +6,6 @@ from .register_coco import register_coco_instances, register_coco_panoptic_separ
 from . import builtin  # ensure the builtin datasets are registered
 
 
-__all__ = [k for k in globals().keys() if "builtin" not in k and not k.startswith("_")]
+__all__ = [
+    k for k in globals() if "builtin" not in k and not k.startswith("_")
+]

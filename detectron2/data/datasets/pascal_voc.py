@@ -30,13 +30,13 @@ def load_voc_instances(dirname: str, split: str):
         dirname: Contain "Annotations", "ImageSets", "JPEGImages"
         split (str): one of "train", "test", "val", "trainval"
     """
-    with PathManager.open(os.path.join(dirname, "ImageSets", "Main", split + ".txt")) as f:
+    with PathManager.open(os.path.join(dirname, "ImageSets", "Main", f"{split}.txt")) as f:
         fileids = np.loadtxt(f, dtype=np.str)
 
     dicts = []
     for fileid in fileids:
-        anno_file = os.path.join(dirname, "Annotations", fileid + ".xml")
-        jpeg_file = os.path.join(dirname, "JPEGImages", fileid + ".jpg")
+        anno_file = os.path.join(dirname, "Annotations", f"{fileid}.xml")
+        jpeg_file = os.path.join(dirname, "JPEGImages", f"{fileid}.jpg")
 
         tree = ET.parse(anno_file)
 

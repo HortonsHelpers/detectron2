@@ -35,14 +35,12 @@ __all__ = [
 
 
 def check_dtype(img):
-    assert isinstance(img, np.ndarray), "[TransformGen] Needs an numpy array, but got a {}!".format(
-        type(img)
-    )
+    assert isinstance(
+        img, np.ndarray
+    ), f"[TransformGen] Needs an numpy array, but got a {type(img)}!"
     assert not isinstance(img.dtype, np.integer) or (
         img.dtype == np.uint8
-    ), "[TransformGen] Got image of type {}, use uint8 or floating points instead!".format(
-        img.dtype
-    )
+    ), f"[TransformGen] Got image of type {img.dtype}, use uint8 or floating points instead!"
     assert img.ndim in [2, 3], img.ndim
 
 
@@ -92,19 +90,19 @@ class TransformGen(metaclass=ABCMeta):
             classname = type(self).__name__
             argstr = []
             for name, param in sig.parameters.items():
-                assert (
-                    param.kind != param.VAR_POSITIONAL and param.kind != param.VAR_KEYWORD
-                ), "The default __repr__ doesn't support *args or **kwargs"
-                assert hasattr(self, name), (
-                    "Attribute {} not found! "
-                    "Default __repr__ only works if attributes match the constructor.".format(name)
-                )
+                assert param.kind not in [
+                    param.VAR_POSITIONAL,
+                    param.VAR_KEYWORD,
+                ], "The default __repr__ doesn't support *args or **kwargs"
+                assert hasattr(
+                    self, name
+                ), f"Attribute {name} not found! Default __repr__ only works if attributes match the constructor."
                 attr = getattr(self, name)
                 default = param.default
                 if default is attr:
                     continue
-                argstr.append("{}={}".format(name, pprint.pformat(attr)))
-            return "{}({})".format(classname, ", ".join(argstr))
+                argstr.append(f"{name}={pprint.pformat(attr)}")
+            return f'{classname}({", ".join(argstr)})'
         except AssertionError:
             return super().__repr__()
 
@@ -136,10 +134,7 @@ class RandomFlip(TransformGen):
     def get_transform(self, img):
         _, w = img.shape[:2]
         do = self._rand_range() < self.prob
-        if do:
-            return HFlipTransform(w)
-        else:
-            return NoOpTransform()
+        return HFlipTransform(w) if do else NoOpTransform()
 
 
 class Resize(TransformGen):
@@ -198,10 +193,7 @@ class ResizeShortestEdge(TransformGen):
             return NoOpTransform()
 
         scale = size * 1.0 / min(h, w)
-        if h < w:
-            newh, neww = size, scale * w
-        else:
-            newh, neww = scale * h, size
+        newh, neww = (size, scale * w) if h < w else (scale * h, size)
         if max(newh, neww) > self.max_size:
             scale = self.max_size * 1.0 / max(newh, neww)
             newh = newh * scale
@@ -225,13 +217,13 @@ class RandomCrop(TransformGen):
                 height and width
         """
         super().__init__()
-        assert crop_type in ["relative_range", "relative", "absolute"]
+        assert crop_type in {"relative_range", "relative", "absolute"}
         self._init(locals())
 
     def get_transform(self, img):
         h, w = img.shape[:2]
         croph, cropw = self.get_crop_size((h, w))
-        assert h >= croph and w >= cropw, "Shape computation in {} has bugs.".format(self)
+        assert h >= croph and w >= cropw, f"Shape computation in {self} has bugs."
         h0 = np.random.randint(h - croph + 1)
         w0 = np.random.randint(w - cropw + 1)
         return CropTransform(w0, h0, cropw, croph)
@@ -255,7 +247,7 @@ class RandomCrop(TransformGen):
         elif self.crop_type == "absolute":
             return self.crop_size
         else:
-            NotImplementedError("Unknown crop type {}".format(self.crop_type))
+            NotImplementedError(f"Unknown crop type {self.crop_type}")
 
 
 class RandomExtent(TransformGen):
@@ -290,11 +282,11 @@ class RandomExtent(TransformGen):
         src_rect *= np.random.uniform(self.scale_range[0], self.scale_range[1])
 
         # Apply a random shift to the coordinates origin.
-        src_rect[0::2] += self.shift_range[0] * img_w * (np.random.rand() - 0.5)
+        src_rect[::2] += self.shift_range[0] * img_w * (np.random.rand() - 0.5)
         src_rect[1::2] += self.shift_range[1] * img_h * (np.random.rand() - 0.5)
 
         # Map src_rect coordinates into image coordinates (center at corner).
-        src_rect[0::2] += 0.5 * img_w
+        src_rect[::2] += 0.5 * img_w
         src_rect[1::2] += 0.5 * img_h
 
         return ExtentTransform(
@@ -439,7 +431,7 @@ def apply_transform_gens(transform_gens, img):
         tfm = g.get_transform(img)
         assert isinstance(
             tfm, Transform
-        ), "TransformGen {} must return an instance of Transform! Got {} instead".format(g, tfm)
+        ), f"TransformGen {g} must return an instance of Transform! Got {tfm} instead"
         img = tfm.apply_image(img)
         tfms.append(tfm)
     return img, TransformList(tfms)
